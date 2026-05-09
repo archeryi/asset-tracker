@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>资产管理 - Asset Tracker</title>
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f1117">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="资产管理">
+    <link rel="apple-touch-icon" href="icons/icon.svg">
+    <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+        <!-- 侧边导航 -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">◆</span>
+                    <span class="logo-text">Asset Tracker</span>
+                </div>
+            </div>
+            <ul class="nav-list">
+                <li class="nav-item active" data-page="dashboard">
+                    <span class="nav-icon">📊</span>
+                    <span>仪表盘</span>
+                </li>
+                <li class="nav-item" data-page="accounts">
+                    <span class="nav-icon">🏦</span>
+                    <span>账户管理</span>
+                </li>
+                <li class="nav-item" data-page="snapshot">
+                    <span class="nav-icon">📝</span>
+                    <span>记录快照</span>
+                </li>
+                <li class="nav-item" data-page="history">
+                    <span class="nav-icon">📈</span>
+                    <span>历史趋势</span>
+                </li>
+                <li class="nav-item" data-page="settings">
+                    <span class="nav-icon">⚙️</span>
+                    <span>设置</span>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <button class="btn-export" onclick="app.exportData()">导出数据</button>
+                <label class="btn-import">
+                    导入数据
+                    <input type="file" accept=".json" onchange="app.importData(event)" hidden>
+                </label>
+            </div>
+        </nav>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <!-- 仪表盘 -->
+            <section class="page active" id="page-dashboard">
+                <div class="page-header">
+                    <h1>资产总览</h1>
+                    <span class="last-update" id="last-update"></span>
+                </div>
+                <div class="dashboard-summary">
+                    <div class="summary-card total">
+                        <div class="card-label">总资产</div>
+                        <div class="card-value" id="total-assets">¥0</div>
+                        <div class="card-change" id="total-change"></div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="card-label">本月变化</div>
+                        <div class="card-value" id="month-change">¥0</div>
+                        <div class="card-change" id="month-change-pct"></div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="card-label">账户数量</div>
+                        <div class="card-value" id="account-count">0</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="card-label">资产类别</div>
+                        <div class="card-value" id="category-count">0</div>
+                    </div>
+                </div>
+                <div class="dashboard-charts">
+                    <div class="chart-container">
+                        <h3>资产趋势</h3>
+                        <canvas id="chart-trend"></canvas>
+                    </div>
+                    <div class="chart-container half">
+                        <h3>资产配置</h3>
+                        <canvas id="chart-allocation"></canvas>
+                    </div>
+                    <div class="chart-container half">
+                        <h3>各类别资产</h3>
+                        <div class="category-list" id="category-list"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 账户管理 -->
+            <section class="page" id="page-accounts">
+                <div class="page-header">
+                    <h1>账户管理</h1>
+                    <button class="btn-primary" onclick="app.showAddAccount()">+ 添加账户</button>
+                </div>
+                <div class="accounts-grid" id="accounts-grid"></div>
+            </section>
+
+            <!-- 记录快照 -->
+            <section class="page" id="page-snapshot">
+                <div class="page-header">
+                    <h1>记录资产快照</h1>
+                    <button class="btn-primary" onclick="app.saveSnapshot()">保存快照</button>
+                </div>
+                <div class="snapshot-form">
+                    <div class="snapshot-date">
+                        <label>记录日期</label>
+                        <input type="date" id="snapshot-date">
+                    </div>
+                    <div class="snapshot-accounts" id="snapshot-accounts"></div>
+                </div>
+            </section>
+
+            <!-- 历史趋势 -->
+            <section class="page" id="page-history">
+                <div class="page-header">
+                    <h1>历史趋势</h1>
+                    <div class="history-controls">
+                        <select id="history-range" onchange="app.updateHistoryChart()">
+                            <option value="3">近3个月</option>
+                            <option value="6" selected>近6个月</option>
+                            <option value="12">近1年</option>
+                            <option value="0">全部</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="chart-container full">
+                    <canvas id="chart-history"></canvas>
+                </div>
+                <div class="history-table-container">
+                    <h3>快照记录</h3>
+                    <table class="history-table" id="history-table">
+                        <thead>
+                            <tr>
+                                <th>日期</th>
+                                <th>总资产</th>
+                                <th>变化</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- 设置 -->
+            <section class="page" id="page-settings">
+                <div class="page-header">
+                    <h1>设置</h1>
+                </div>
+                <div class="settings-content">
+                    <div class="settings-section">
+                        <h3>资产类别管理</h3>
+                        <div class="category-manager" id="category-manager"></div>
+                        <button class="btn-secondary" onclick="app.showAddCategory()">+ 添加类别</button>
+                    </div>
+                    <div class="settings-section">
+                        <h3>数据管理</h3>
+                        <p class="settings-desc">数据存储在浏览器本地，建议定期导出备份。</p>
+                        <div class="settings-actions">
+                            <button class="btn-secondary" onclick="app.exportData()">导出 JSON</button>
+                            <label class="btn-secondary">
+                                导入 JSON
+                                <input type="file" accept=".json" onchange="app.importData(event)" hidden>
+                            </label>
+                            <button class="btn-danger" onclick="app.clearData()">清除所有数据</button>
+                        </div>
+                    </div>
+                    <div class="settings-section">
+                        <h3>使用说明</h3>
+                        <div class="usage-guide">
+                            <p><strong>1. 添加账户</strong>：在「账户管理」中添加你的各类资产账户</p>
+                            <p><strong>2. 记录快照</strong>：定期（建议每周或每月）在「记录快照」中填入各账户当前余额</p>
+                            <p><strong>3. 查看趋势</strong>：在「仪表盘」和「历史趋势」中查看资产变化</p>
+                            <p><strong>4. 数据备份</strong>：使用导出功能将数据保存为 JSON 文件，可存放在 iCloud Drive 实现多端同步</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 模态框 -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal" id="modal">
+            <div class="modal-header">
+                <h2 id="modal-title"></h2>
+                <button class="modal-close" onclick="app.closeModal()">×</button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        // 注册 Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').then(reg => {
+                console.log('SW registered:', reg.scope);
+            }).catch(err => {
+                console.log('SW registration failed:', err);
+            });
+        }
+    </script>
+</body>
+</html>

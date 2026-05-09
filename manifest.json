@@ -1,0 +1,24 @@
+{
+    "name": "资产管理 - Asset Tracker",
+    "short_name": "资产管理",
+    "description": "个人资产追踪与趋势分析工具",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#0f1117",
+    "theme_color": "#0f1117",
+    "orientation": "any",
+    "icons": [
+        {
+            "src": "icons/icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "icons/icon.svg",
+            "sizes": "512x512",
+            "type": "image/svg+xml",
+            "purpose": "maskable"
+        }
+    ]
+}
