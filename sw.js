@@ -1,4 +1,4 @@
-const CACHE_NAME = 'asset-tracker-v1';
+const CACHE_NAME = 'asset-tracker-v2';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
@@ -33,26 +33,37 @@ self.addEventListener('activate', event => {
     self.clients.claim();
 });
 
-// 拦截请求 - 缓存优先策略
+// 拦截请求 - 本地资源 network-first（保证更新），CDN 资源 cache-first
 self.addEventListener('fetch', event => {
+    const url = new URL(event.request.url);
+    const isLocal = url.origin === self.location.origin;
+
     event.respondWith(
-        caches.match(event.request).then(cachedResponse => {
-            if (cachedResponse) {
-                return cachedResponse;
-            }
-            return fetch(event.request).then(response => {
-                // 不缓存非 GET 请求
-                if (event.request.method !== 'GET') return response;
-                // 缓存新请求的资源
-                const responseClone = response.clone();
-                caches.open(CACHE_NAME).then(cache => {
-                    cache.put(event.request, responseClone);
-                });
-                return response;
-            });
-        }).catch(() => {
-            // 离线时返回缓存的首页
-            return caches.match('./index.html');
-        })
+        isLocal ? networkFirst(event.request) : cacheFirst(event.request)
     );
 });
+
+async function networkFirst(request) {
+    try {
+        const response = await fetch(request);
+        const cache = await caches.open(CACHE_NAME);
+        cache.put(request, response.clone());
+        return response;
+    } catch (e) {
+        const cached = await caches.match(request);
+        return cached || caches.match('./index.html');
+    }
+}
+
+async function cacheFirst(request) {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+    try {
+        const response = await fetch(request);
+        const cache = await caches.open(CACHE_NAME);
+        cache.put(request, response.clone());
+        return response;
+    } catch (e) {
+        return new Response('', { status: 408 });
+    }
+}
