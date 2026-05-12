@@ -22,20 +22,23 @@
 html {
     touch-action: manipulation;
     background: #1c1c1e;
+    height: 100%;
 }
 
 body {
     font-family: -apple-system, 'SF Pro Display', 'SF Pro Text', sans-serif;
-    background: var(--bg-primary);
+    background: #1c1c1e;
     color: var(--text-primary);
     line-height: 1.5;
     overflow: hidden;
-    height: 100vh; height: 100dvh;
+    height: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
     -webkit-text-size-adjust: 100%;
     -webkit-font-smoothing: antialiased;
 }
 
-.app { display: flex; height: 100vh; height: 100dvh; }
+.app { display: flex; height: 100vh; height: 100dvh; background: var(--bg-primary); }
 
 /* ==================== Sidebar (Desktop) ==================== */
 .sidebar {
