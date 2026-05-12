@@ -106,12 +106,11 @@ body {
 }
 .ios-group-header {
     font-size: 13px; color: var(--text-muted); text-transform: uppercase;
-    padding: 8px 16px 6px; background: transparent; letter-spacing: 0.5px;
-    margin: 0 -0px; padding-top: 24px; padding-bottom: 8px;
-    background: var(--bg-primary);
+    letter-spacing: 0.5px;
+    padding: 24px 16px 8px;
+    background: var(--bg-grouped);
 }
 .ios-group .ios-group-header:first-child {
-    background: var(--bg-primary); margin: -1px -0px 0; border-radius: var(--radius) var(--radius) 0 0;
     padding-top: 12px;
 }
 .ios-row {
@@ -160,7 +159,7 @@ body {
 
 /* ==================== Dashboard ==================== */
 .dashboard-summary {
-    display: grid; grid-template-columns: repeat(4, 1fr);
+    display: grid; grid-template-columns: repeat(2, 1fr);
     gap: 12px; margin-bottom: 24px;
 }
 .summary-card {
@@ -207,17 +206,8 @@ body {
 
 /* ==================== Accounts ==================== */
 .accounts-list { }
-.account-row {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 16px; min-height: 52px;
-    background: var(--bg-grouped); border-bottom: 1px solid var(--separator);
-}
-.account-row:first-child { border-radius: var(--radius) var(--radius) 0 0; }
-.account-row:last-child { border-radius: 0 0 var(--radius) var(--radius); border-bottom: none; }
-.account-row:only-child { border-radius: var(--radius); }
 .account-row-left { flex: 1; }
 .account-row-name { font-size: 16px; font-weight: 500; }
-.account-row-tag { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 .account-row-balance { font-size: 16px; font-weight: 600; color: var(--text-primary); margin-right: 8px; }
 .account-row-arrow { color: var(--text-muted); flex-shrink: 0; }
 
@@ -254,6 +244,16 @@ body {
 .snapshot-total-bar .label { font-size: 15px; color: var(--text-secondary); }
 .snapshot-total-bar .value { font-size: 20px; font-weight: 700; color: var(--accent-light); }
 
+/* Copy last button */
+.snapshot-copy-btn {
+    display: block; width: 100%; padding: 12px;
+    background: var(--bg-grouped); border: 1px solid var(--separator);
+    border-radius: var(--radius); color: var(--accent);
+    font-size: 15px; font-weight: 500; text-align: center;
+    cursor: pointer; margin-bottom: 16px;
+}
+.snapshot-copy-btn:active { opacity: 0.7; }
+
 /* ==================== History ==================== */
 .ios-select {
     padding: 6px 12px; background: var(--bg-grouped);
@@ -262,27 +262,29 @@ body {
     cursor: pointer; min-height: 32px;
     -webkit-appearance: none; appearance: none;
 }
-.history-row {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 16px; min-height: 44px;
-    background: var(--bg-grouped); border-bottom: 1px solid var(--separator);
-}
-.history-row:last-child { border-bottom: none; }
 .history-row-date { font-size: 15px; min-width: 90px; }
 .history-row-total { font-size: 15px; font-weight: 600; flex: 1; text-align: right; }
 .history-row-change { font-size: 13px; min-width: 80px; text-align: right; }
 .history-row-change.positive { color: var(--green); }
 .history-row-change.negative { color: var(--red); }
 
+/* History detail expand */
+.history-detail {
+    padding: 8px 16px 12px;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--separator);
+    font-size: 13px;
+    display: none;
+}
+.history-detail.open { display: block; }
+.history-detail-row {
+    display: flex; justify-content: space-between;
+    padding: 4px 0; color: var(--text-secondary);
+}
+.history-detail-row span:last-child { color: var(--text-primary); }
+
 /* ==================== Settings ==================== */
 .settings-content { max-width: 700px; }
-.cat-row {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 16px; min-height: 44px;
-    background: var(--bg-grouped); border-bottom: 1px solid var(--separator);
-    font-size: 15px;
-}
-.cat-row:last-child { border-bottom: none; }
 
 /* ==================== Bottom Sheet ==================== */
 .sheet-overlay {
@@ -295,7 +297,7 @@ body {
     background: var(--bg-secondary); border-radius: 14px 14px 0 0;
     max-height: 85vh; overflow-y: auto;
     transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: 20px;
 }
 .sheet-overlay.active .sheet { transform: translateY(0); }
 .sheet-handle {
@@ -327,7 +329,7 @@ body {
 .action-sheet-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,0);
     z-index: 2000; display: none; align-items: flex-end; justify-content: center;
-    padding: 8px; padding-bottom: env(safe-area-inset-bottom, 8px);
+    padding: 8px; padding-bottom: 16px;
     transition: background 0.25s;
 }
 .action-sheet-overlay.active { display: flex; background: rgba(0,0,0,0.4); }
@@ -363,7 +365,7 @@ body {
 
 /* ==================== Toast ==================== */
 .toast-container {
-    position: fixed; top: env(safe-area-inset-top, 20px); left: 50%;
+    position: fixed; top: 20px; left: 50%;
     transform: translateX(-50%); z-index: 3000;
     display: flex; flex-direction: column; align-items: center;
     gap: 8px; pointer-events: none; padding-top: 12px;
@@ -374,7 +376,6 @@ body {
     box-shadow: 0 8px 32px rgba(0,0,0,0.5); pointer-events: auto;
     max-width: 90vw; text-align: center;
     animation: toastIn 0.3s ease, toastOut 0.3s ease 2.2s forwards;
-    backdrop-filter: saturate(180%) blur(20px);
 }
 .toast.success { border-left: 3px solid var(--green); }
 .toast.error { border-left: 3px solid var(--red); }
@@ -383,8 +384,6 @@ body {
 
 /* ==================== Responsive - Tablet ==================== */
 @media (max-width: 1024px) {
-    .dashboard-summary { grid-template-columns: repeat(2, 1fr); }
-    .summary-card.total { grid-column: span 2; }
     .dashboard-charts { grid-template-columns: 1fr; }
     .chart-container.half { grid-column: auto; }
 }
@@ -393,7 +392,7 @@ body {
 @media (max-width: 768px) {
     .app { flex-direction: column; }
 
-    /* iOS Tab Bar - 直接贴底，无安全区空白 */
+    /* iOS Tab Bar */
     .sidebar {
         width: 100%; flex-direction: column; padding: 0;
         position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
@@ -408,7 +407,6 @@ body {
         align-items: center;
         width: 100%; margin: 0; padding: 0;
         height: 50px;
-        padding-bottom: 0;
     }
     .nav-item {
         flex-direction: column; gap: 3px; padding: 0;
@@ -431,9 +429,7 @@ body {
     .page-title-bar { margin-bottom: 16px; }
 
     /* Dashboard mobile */
-    .dashboard-summary { grid-template-columns: 1fr 1fr; gap: 8px; }
     .summary-card { padding: 12px 14px; }
-    .summary-card.total { grid-column: span 2; }
     .card-value { font-size: 20px; }
 
     /* Snapshot mobile */
