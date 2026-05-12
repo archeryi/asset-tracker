@@ -393,7 +393,7 @@ body {
 @media (max-width: 768px) {
     .app { flex-direction: column; }
 
-    /* iOS Tab Bar - 紧凑布局 */
+    /* iOS Tab Bar - 直接贴底，无安全区空白 */
     .sidebar {
         width: 100%; flex-direction: column; padding: 0;
         position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
@@ -407,6 +407,7 @@ body {
         align-items: center;
         width: 100%; margin: 0; padding: 0;
         height: 50px;
+        padding-bottom: 0;
     }
     .nav-item {
         flex-direction: column; gap: 2px; padding: 0;
@@ -418,19 +419,11 @@ body {
     .nav-item span:last-child { display: block; font-size: 10px; line-height: 1; }
     .nav-svg { width: 24px; height: 24px; }
 
-    /* Home Indicator 安全区作为独立区域 */
-    .sidebar::after {
-        content: '';
-        display: block;
-        height: env(safe-area-inset-bottom, 0);
-        background: #000000;
-    }
-
     /* Content */
     .main-content {
         padding: 16px;
-        padding-top: calc(env(safe-area-inset-top, 12px) + 12px);
-        padding-bottom: calc(49px + env(safe-area-inset-bottom));
+        padding-top: 16px;
+        padding-bottom: 58px;
         height: 100vh; height: 100dvh;
     }
     .large-title { font-size: 28px; }
