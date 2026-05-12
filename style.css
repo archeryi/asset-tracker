@@ -19,7 +19,10 @@
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html { touch-action: manipulation; }
+html {
+    touch-action: manipulation;
+    background: #1c1c1e;
+}
 
 body {
     font-family: -apple-system, 'SF Pro Display', 'SF Pro Text', sans-serif;

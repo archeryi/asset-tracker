@@ -4,8 +4,8 @@
     "description": "个人资产追踪与趋势分析工具",
     "start_url": "./index.html",
     "display": "standalone",
-    "background_color": "#0f1117",
-    "theme_color": "#0f1117",
+    "background_color": "#1c1c1e",
+    "theme_color": "#000000",
     "orientation": "any",
     "icons": [
         {
