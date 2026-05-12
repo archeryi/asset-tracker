@@ -21,13 +21,13 @@
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html {
     touch-action: manipulation;
-    background: #1c1c1e;
+    background: #000000;
     height: 100%;
 }
 
 body {
     font-family: -apple-system, 'SF Pro Display', 'SF Pro Text', sans-serif;
-    background: #1c1c1e;
+    background: #000000;
     color: var(--text-primary);
     line-height: 1.5;
     overflow: hidden;
@@ -399,28 +399,26 @@ body {
         position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
         border-right: none; border-top: 1px solid var(--separator);
         padding-bottom: env(safe-area-inset-bottom);
-        background: #1c1c1e;
-        backdrop-filter: saturate(180%) blur(20px);
-        -webkit-backdrop-filter: saturate(180%) blur(20px);
+        background: #000000;
     }
     .sidebar-header, .sidebar-footer { display: none; }
     .nav-list {
         display: flex; flex-direction: row; justify-content: space-around;
-        width: 100%; padding: 6px 0 0;
+        width: 100%; padding: 8px 0 6px;
     }
     .nav-item {
-        flex-direction: column; gap: 1px; padding: 4px 0 2px;
+        flex-direction: column; gap: 3px; padding: 2px 0;
         font-size: 10px; margin: 0; border-radius: 0;
         min-width: 0; flex: 1; align-items: center; justify-content: center;
     }
-    .nav-item span:last-child { display: block; font-size: 10px; line-height: 1.2; }
-    .nav-svg { width: 22px; height: 22px; }
+    .nav-item span:last-child { display: block; font-size: 11px; line-height: 1.3; }
+    .nav-svg { width: 28px; height: 28px; }
 
     /* Content */
     .main-content {
         padding: 16px;
         padding-top: calc(env(safe-area-inset-top, 12px) + 12px);
-        padding-bottom: calc(56px + env(safe-area-inset-bottom));
+        padding-bottom: calc(64px + env(safe-area-inset-bottom));
         height: 100vh; height: 100dvh;
     }
     .large-title { font-size: 28px; }
