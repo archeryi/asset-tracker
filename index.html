@@ -223,8 +223,14 @@
 
     <script src="app.js"></script>
     <script>
+        // 注销旧 SW 并清除所有缓存（彻底解决 PWA 缓存锁死）
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').catch(() => {});
+            navigator.serviceWorker.getRegistrations().then(regs => {
+                regs.forEach(r => r.unregister());
+            });
+            if (window.caches) {
+                caches.keys().then(names => names.forEach(n => caches.delete(n)));
+            }
         }
     </script>
 </body>
