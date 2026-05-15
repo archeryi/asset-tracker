@@ -58,7 +58,7 @@ body {
     color: var(--text-muted); transition: all 0.2s;
     margin-bottom: 2px; font-size: 15px; user-select: none;
 }
-.nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+.nav-item:hover { color: var(--text-primary); }
 .nav-item.active { color: var(--accent); background: transparent; }
 .nav-item.active .nav-svg { stroke: var(--accent); }
 .sidebar-footer {
@@ -101,15 +101,10 @@ body {
 
 .btn-eye {
     background: none; border: none; color: rgba(255,255,255,0.6);
-    cursor: pointer; padding: 4px; display: flex; align-items: center;
-    border-radius: 6px; min-width: 28px; min-height: 28px;
-    justify-content: center; margin-left: 8px;
+    cursor: pointer; padding: 2px 4px; display: inline-flex; align-items: center;
+    border-radius: 4px; vertical-align: middle; margin-left: 4px;
 }
 .btn-eye:active { opacity: 0.5; }
-
-.card-value-row {
-    display: flex; align-items: center;
-}
 
 /* Amount hiding - replace with **** */
 .app.hide-amounts .card-value,
