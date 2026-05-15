@@ -100,14 +100,18 @@ body {
 .btn-primary:active { opacity: 0.7; transform: scale(0.96); }
 
 .btn-eye {
-    background: none; border: none; color: var(--text-muted);
-    cursor: pointer; padding: 6px; display: flex; align-items: center;
-    border-radius: 8px; min-width: 34px; min-height: 34px;
-    justify-content: center;
+    background: none; border: none; color: rgba(255,255,255,0.6);
+    cursor: pointer; padding: 4px; display: flex; align-items: center;
+    border-radius: 6px; min-width: 28px; min-height: 28px;
+    justify-content: center; margin-left: 8px;
 }
-.btn-eye:active { background: var(--bg-hover); }
+.btn-eye:active { opacity: 0.5; }
 
-/* Amount hiding */
+.card-value-row {
+    display: flex; align-items: center;
+}
+
+/* Amount hiding - replace with **** */
 .app.hide-amounts .card-value,
 .app.hide-amounts .account-row-balance,
 .app.hide-amounts .category-value,
@@ -116,10 +120,56 @@ body {
 .app.hide-amounts .history-row-total,
 .app.hide-amounts .history-row-change,
 .app.hide-amounts .history-detail-row span:last-child {
-    filter: blur(8px);
-    user-select: none;
-    -webkit-user-select: none;
+    font-size: 0 !important;
+    color: transparent !important;
 }
+.app.hide-amounts .card-value::after,
+.app.hide-amounts .account-row-balance::after,
+.app.hide-amounts .category-value::after,
+.app.hide-amounts .snapshot-total-bar .value::after,
+.app.hide-amounts .snapshot-subtotal strong::after,
+.app.hide-amounts .history-row-total::after,
+.app.hide-amounts .history-row-change::after,
+.app.hide-amounts .history-detail-row span:last-child::after {
+    content: '****';
+    font-size: 20px;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+}
+.app.hide-amounts .summary-card.total .card-value::after {
+    font-size: 24px;
+    color: rgba(255,255,255,0.5);
+}
+
+/* Period stats in history */
+.period-stats {
+    display: flex; gap: 16px; margin-bottom: 14px;
+    font-size: 13px; color: var(--text-secondary); flex-wrap: wrap;
+}
+.period-stats .stat-item {
+    display: flex; flex-direction: column; gap: 2px;
+}
+.period-stats .stat-value {
+    font-size: 16px; font-weight: 600; color: var(--text-primary);
+}
+.period-stats .stat-value.positive { color: var(--green); }
+.period-stats .stat-value.negative { color: var(--red); }
+
+/* Trend summary card */
+.trend-summary-card { display: flex; flex-direction: column; justify-content: center; }
+.trend-summary-text { font-size: 15px; font-weight: 500; line-height: 1.4; }
+
+/* Category rank */
+.category-rank-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px; border-bottom: 1px solid var(--separator);
+    font-size: 14px;
+}
+.category-rank-row:last-child { border-bottom: none; }
+.category-rank-name { flex: 1; }
+.category-rank-change { font-weight: 600; min-width: 80px; text-align: right; }
+.category-rank-change.positive { color: var(--green); }
+.category-rank-change.negative { color: var(--red); }
 
 /* ==================== iOS Grouped List ==================== */
 .ios-group {

@@ -247,14 +247,29 @@ class AssetTracker {
     renderDashboard() {
         const snapshots = [...this.data.snapshots].sort((a, b) => a.date.localeCompare(b.date));
         const latest = snapshots[snapshots.length - 1];
-        const previous = snapshots[snapshots.length - 2];
         const total = latest ? this.getSnapshotTotal(latest) : 0;
 
         this.animateNumber('total-assets', total);
         document.getElementById('last-update').textContent = latest ? `更新于 ${latest.date}` : '';
 
-        if (latest && previous) {
-            const pt = this.getSnapshotTotal(previous);
+        // 本月变化：对比 30 天前最近的快照
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const thirtyStr = thirtyDaysAgo.toISOString().split('T')[0];
+        const monthAgoSnap = [...snapshots].reverse().find(s => s.date <= thirtyStr);
+
+        if (latest && monthAgoSnap && monthAgoSnap !== latest) {
+            const pt = this.getSnapshotTotal(monthAgoSnap);
+            const change = total - pt;
+            const pct = pt > 0 ? (change / pt * 100).toFixed(2) : 0;
+            this.animateNumber('month-change', change);
+            const el = document.getElementById('month-change-pct');
+            el.textContent = `${change >= 0 ? '+' : ''}${pct}%`;
+            el.className = `card-change ${change >= 0 ? 'positive' : 'negative'}`;
+        } else if (latest && snapshots.length >= 2) {
+            // 回退：对比上一次快照
+            const prev = snapshots[snapshots.length - 2];
+            const pt = this.getSnapshotTotal(prev);
             const change = total - pt;
             const pct = pt > 0 ? (change / pt * 100).toFixed(2) : 0;
             this.animateNumber('month-change', change);
@@ -266,9 +281,39 @@ class AssetTracker {
             document.getElementById('month-change-pct').textContent = '';
         }
 
-        document.getElementById('account-count').textContent = this.data.accounts.length;
-        document.getElementById('category-count').textContent =
-            [...new Set(this.data.accounts.map(a => a.category))].length;
+        // 年度收益：对比今年 1 月 1 日之后的第一笔快照
+        const yearStart = new Date().getFullYear() + '-01-01';
+        const yearFirstSnap = snapshots.find(s => s.date >= yearStart);
+        if (latest && yearFirstSnap && yearFirstSnap !== latest) {
+            const yStart = this.getSnapshotTotal(yearFirstSnap);
+            const yChange = total - yStart;
+            const yPct = yStart > 0 ? (yChange / yStart * 100).toFixed(2) : 0;
+            this.animateNumber('year-change', yChange);
+            const yEl = document.getElementById('year-change-pct');
+            yEl.textContent = `${yChange >= 0 ? '+' : ''}${yPct}%`;
+            yEl.className = `card-change ${yChange >= 0 ? 'positive' : 'negative'}`;
+        } else {
+            document.getElementById('year-change').textContent = '¥0';
+            document.getElementById('year-change-pct').textContent = '';
+        }
+
+        // 趋势摘要
+        const summaryEl = document.getElementById('trend-summary');
+        if (snapshots.length >= 3) {
+            const recent3 = snapshots.slice(-3).map(s => this.getSnapshotTotal(s));
+            const allUp = recent3[2] > recent3[1] && recent3[1] > recent3[0];
+            const allDown = recent3[2] < recent3[1] && recent3[1] < recent3[0];
+            if (allUp) summaryEl.textContent = '📈 连续增长中';
+            else if (allDown) summaryEl.textContent = '📉 连续下降';
+            else summaryEl.textContent = '📊 波动中，整体' + (recent3[2] >= recent3[0] ? '上升' : '下降');
+            summaryEl.style.color = allDown ? 'var(--red)' : allUp ? 'var(--green)' : 'var(--text-secondary)';
+        } else if (snapshots.length >= 1) {
+            summaryEl.textContent = '记录更多快照后显示趋势';
+            summaryEl.style.color = 'var(--text-muted)';
+        } else {
+            summaryEl.textContent = '暂无数据';
+            summaryEl.style.color = 'var(--text-muted)';
+        }
 
         this.renderTrendChart(snapshots);
         if (latest) {
@@ -562,6 +607,8 @@ class AssetTracker {
     // ==================== History ====================
     renderHistory() {
         this.updateHistoryChart();
+        this.renderPeriodStats();
+        this.renderCategoryRank();
         this.renderHistoryList();
     }
 
@@ -622,6 +669,55 @@ class AssetTracker {
                 }
             }
         });
+    }
+
+    renderPeriodStats() {
+        const el = document.getElementById('period-stats');
+        const range = parseInt(document.getElementById('history-range').value);
+        let snaps = [...this.data.snapshots].sort((a, b) => a.date.localeCompare(b.date));
+        if (range > 0) {
+            const co = new Date(); co.setMonth(co.getMonth() - range);
+            snaps = snaps.filter(s => s.date >= co.toISOString().split('T')[0]);
+        }
+        if (snaps.length < 2) { el.innerHTML = ''; return; }
+
+        const first = this.getSnapshotTotal(snaps[0]);
+        const last = this.getSnapshotTotal(snaps[snaps.length - 1]);
+        const change = last - first;
+        const pct = first > 0 ? (change / first * 100).toFixed(1) : 0;
+        const max = Math.max(...snaps.map(s => this.getSnapshotTotal(s)));
+
+        el.innerHTML = `
+            <div class="stat-item"><span>期间变化</span><span class="stat-value ${change >= 0 ? 'positive' : 'negative'}">${change >= 0 ? '+' : ''}${this.formatMoney(change)} (${change >= 0 ? '+' : ''}${pct}%)</span></div>
+            <div class="stat-item"><span>最高</span><span class="stat-value">${this.formatMoney(max)}</span></div>
+        `;
+    }
+
+    renderCategoryRank() {
+        const el = document.getElementById('category-rank');
+        const range = parseInt(document.getElementById('history-range').value);
+        let snaps = [...this.data.snapshots].sort((a, b) => a.date.localeCompare(b.date));
+        if (range > 0) {
+            const co = new Date(); co.setMonth(co.getMonth() - range);
+            snaps = snaps.filter(s => s.date >= co.toISOString().split('T')[0]);
+        }
+        if (snaps.length < 2) { el.innerHTML = '<div style="padding:16px;color:var(--text-muted);font-size:14px">数据不足</div>'; return; }
+
+        const firstSnap = snaps[0], lastSnap = snaps[snaps.length - 1];
+        const catChanges = {};
+        this.data.accounts.forEach(a => {
+            const startVal = firstSnap.assets[a.id] || 0;
+            const endVal = lastSnap.assets[a.id] || 0;
+            catChanges[a.category] = (catChanges[a.category] || 0) + (endVal - startVal);
+        });
+
+        const sorted = Object.entries(catChanges).sort((a, b) => b[1] - a[1]);
+        el.innerHTML = sorted.map(([name, change]) =>
+            `<div class="category-rank-row">
+                <span class="category-rank-name">${name}</span>
+                <span class="category-rank-change ${change >= 0 ? 'positive' : 'negative'}">${change >= 0 ? '+' : ''}${this.formatMoneyShort(change)}</span>
+            </div>`
+        ).join('');
     }
 
     renderHistoryList() {
