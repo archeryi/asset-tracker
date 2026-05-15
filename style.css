@@ -99,6 +99,28 @@ body {
 }
 .btn-primary:active { opacity: 0.7; transform: scale(0.96); }
 
+.btn-eye {
+    background: none; border: none; color: var(--text-muted);
+    cursor: pointer; padding: 6px; display: flex; align-items: center;
+    border-radius: 8px; min-width: 34px; min-height: 34px;
+    justify-content: center;
+}
+.btn-eye:active { background: var(--bg-hover); }
+
+/* Amount hiding */
+.app.hide-amounts .card-value,
+.app.hide-amounts .account-row-balance,
+.app.hide-amounts .category-value,
+.app.hide-amounts .snapshot-total-bar .value,
+.app.hide-amounts .snapshot-subtotal strong,
+.app.hide-amounts .history-row-total,
+.app.hide-amounts .history-row-change,
+.app.hide-amounts .history-detail-row span:last-child {
+    filter: blur(8px);
+    user-select: none;
+    -webkit-user-select: none;
+}
+
 /* ==================== iOS Grouped List ==================== */
 .ios-group {
     background: var(--bg-grouped); border-radius: var(--radius);

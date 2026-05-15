@@ -69,7 +69,15 @@
             <section class="page active" id="page-dashboard">
                 <div class="page-title-bar">
                     <h1 class="large-title">资产总览</h1>
-                    <span class="last-update" id="last-update"></span>
+                    <div style="display:flex;align-items:center;gap:12px">
+                        <button class="btn-eye" id="btn-eye" onclick="app.toggleHideAmounts()" title="隐藏金额">
+                            <svg id="eye-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                        </button>
+                        <span class="last-update" id="last-update"></span>
+                    </div>
                 </div>
                 <div class="dashboard-summary">
                     <div class="summary-card total">
