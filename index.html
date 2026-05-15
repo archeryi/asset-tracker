@@ -17,7 +17,6 @@
 </head>
 <body>
     <div class="app">
-        <!-- 侧边栏 (桌面) / 底部 Tab Bar (移动) -->
         <nav class="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
@@ -35,13 +34,6 @@
                     </svg>
                     <span>总览</span>
                 </li>
-                <li class="nav-item" data-page="accounts">
-                    <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                        <rect x="2" y="5" width="20" height="14" rx="3"/>
-                        <path d="M2 10h20"/>
-                    </svg>
-                    <span>账户</span>
-                </li>
                 <li class="nav-item" data-page="snapshot">
                     <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                         <circle cx="12" cy="12" r="9"/>
@@ -56,12 +48,12 @@
                     </svg>
                     <span>趋势</span>
                 </li>
-                <li class="nav-item" data-page="settings">
+                <li class="nav-item" data-page="profile">
                     <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                        <circle cx="12" cy="12" r="3"/>
-                        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
                     </svg>
-                    <span>设置</span>
+                    <span>我的</span>
                 </li>
             </ul>
             <div class="sidebar-footer">
@@ -72,7 +64,6 @@
             </div>
         </nav>
 
-        <!-- 主内容区 -->
         <main class="main-content">
             <!-- 仪表盘 -->
             <section class="page active" id="page-dashboard">
@@ -116,15 +107,6 @@
                 </div>
             </section>
 
-            <!-- 账户管理 -->
-            <section class="page" id="page-accounts">
-                <div class="page-title-bar">
-                    <h1 class="large-title">账户管理</h1>
-                    <button class="btn-primary" onclick="app.showAddAccount()">+ 添加</button>
-                </div>
-                <div class="accounts-list" id="accounts-list"></div>
-            </section>
-
             <!-- 记录快照 -->
             <section class="page" id="page-snapshot">
                 <div class="page-title-bar">
@@ -162,49 +144,47 @@
                 </div>
             </section>
 
-            <!-- 设置 -->
-            <section class="page" id="page-settings">
+            <!-- 我的（账户+设置合并） -->
+            <section class="page" id="page-profile">
                 <div class="page-title-bar">
-                    <h1 class="large-title">设置</h1>
+                    <h1 class="large-title">我的</h1>
+                    <button class="btn-primary" onclick="app.showAddAccount()">+ 账户</button>
                 </div>
-                <div class="settings-content">
-                    <div class="ios-group">
-                        <div class="ios-group-header">资产类别</div>
-                        <div id="category-manager"></div>
-                        <div class="ios-row ios-row-action" onclick="app.showAddCategory()">
-                            <span style="color:var(--accent)">+ 添加类别</span>
-                        </div>
+
+                <!-- 账户列表 -->
+                <div class="ios-group-header-outside">资产账户</div>
+                <div class="accounts-list" id="accounts-list"></div>
+
+                <!-- 类别管理 -->
+                <div class="ios-group">
+                    <div class="ios-group-header">资产类别</div>
+                    <div id="category-manager"></div>
+                    <div class="ios-row ios-row-action" onclick="app.showAddCategory()">
+                        <span style="color:var(--accent)">+ 添加类别</span>
                     </div>
-                    <div class="ios-group">
-                        <div class="ios-group-header">数据管理</div>
-                        <div class="ios-row ios-row-action" onclick="app.exportData()">
-                            <span>导出 JSON 备份</span>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg>
-                        </div>
-                        <label class="ios-row ios-row-action">
-                            <span>导入 JSON 数据</span>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg>
-                            <input type="file" accept=".json" onchange="app.importData(event)" hidden>
-                        </label>
-                        <div class="ios-row ios-row-action ios-row-danger" onclick="app.clearData()">
-                            <span>清除所有数据</span>
-                        </div>
+                </div>
+
+                <!-- 数据管理 -->
+                <div class="ios-group">
+                    <div class="ios-group-header">数据管理</div>
+                    <div class="ios-row ios-row-action" onclick="app.exportData()">
+                        <span>备份数据</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg>
                     </div>
-                    <div class="ios-group">
-                        <div class="ios-group-header">使用说明</div>
-                        <div class="ios-row-static">
-                            <p>1. 在「账户」中添加你的各类资产账户</p>
-                            <p>2. 定期在「记录」中填入各账户当前余额</p>
-                            <p>3. 在「总览」和「趋势」中查看资产变化</p>
-                            <p>4. 导出 JSON 文件存放在 iCloud Drive 可跨设备同步</p>
-                        </div>
+                    <label class="ios-row ios-row-action">
+                        <span>恢复数据</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg>
+                        <input type="file" accept=".json" onchange="app.importData(event)" hidden>
+                    </label>
+                    <div class="ios-row ios-row-action ios-row-danger" onclick="app.clearData()">
+                        <span>清除所有数据</span>
                     </div>
                 </div>
             </section>
         </main>
     </div>
 
-    <!-- Bottom Sheet 模态框 -->
+    <!-- Bottom Sheet -->
     <div class="sheet-overlay" id="sheet-overlay">
         <div class="sheet" id="sheet">
             <div class="sheet-handle"></div>
@@ -225,13 +205,10 @@
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js').then(reg => {
-                // SW 更新时自动刷新
                 reg.addEventListener('updatefound', () => {
                     const newSW = reg.installing;
                     newSW.addEventListener('statechange', () => {
-                        if (newSW.state === 'activated') {
-                            window.location.reload();
-                        }
+                        if (newSW.state === 'activated') window.location.reload();
                     });
                 });
             }).catch(() => {});

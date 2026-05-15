@@ -283,8 +283,12 @@ body {
 }
 .history-detail-row span:last-child { color: var(--text-primary); }
 
-/* ==================== Settings ==================== */
+/* ==================== Settings / Profile ==================== */
 .settings-content { max-width: 700px; }
+.ios-group-header-outside {
+    font-size: 13px; color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: 0.5px; padding: 0 4px 8px; margin-top: 4px;
+}
 
 /* ==================== Bottom Sheet ==================== */
 .sheet-overlay {

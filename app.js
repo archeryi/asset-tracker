@@ -237,7 +237,7 @@ class AssetTracker {
                 if (page === 'dashboard') this.renderDashboard();
                 if (page === 'history') this.renderHistory();
                 if (page === 'snapshot') this.renderSnapshotForm();
-                if (page === 'accounts') this.renderAccounts();
+                if (page === 'profile') { this.renderAccounts(); this.renderSettings(); }
             });
         });
     }
@@ -275,7 +275,7 @@ class AssetTracker {
             this.renderCategoryList(latest);
         } else {
             document.getElementById('category-list').innerHTML =
-                '<div class="empty-state"><div class="empty-state-text">添加账户并记录第一笔快照</div></div>';
+                '<div class="empty-state"><div class="empty-state-text">在「我的」添加账户<br>在「记录」保存第一笔快照</div></div>';
         }
     }
 
@@ -392,7 +392,8 @@ class AssetTracker {
         const snap = this.getLatestSnapshot();
         if (!this.data.accounts.length) {
             list.innerHTML = `<div class="ios-group" style="cursor:pointer" onclick="app.showAddAccount()">
-                <div class="empty-state"><div class="empty-state-icon">+</div><div class="empty-state-text">添加第一个资产账户</div></div></div>`;
+                <div class="empty-state"><div class="empty-state-icon" style="font-size:36px">+</div>
+                <div class="empty-state-text">点击添加你的第一个资产账户<br><span style="font-size:13px;color:var(--text-muted)">如：招商银行、余额宝、基金账户等</span></div></div></div>`;
             return;
         }
         const grouped = {};
@@ -474,16 +475,14 @@ class AssetTracker {
         this.data.accounts.forEach(a => { if (!grouped[a.category]) grouped[a.category] = []; grouped[a.category].push(a); });
 
         if (!Object.keys(grouped).length) {
-            c.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">请先添加账户</div></div>';
+            c.innerHTML = `<div class="empty-state">
+                <div class="empty-state-icon" style="font-size:48px">📊</div>
+                <div class="empty-state-text">还没有账户<br>在「我的」中添加账户后即可记录</div>
+            </div>`;
             return;
         }
 
-        // 一键复制上次按钮
-        let html = snap
-            ? '<button class="snapshot-copy-btn" onclick="app.copyLastSnapshot()">📋 一键填入上次数据</button>'
-            : '';
-
-        html += Object.entries(grouped).map(([cat, accs]) => `
+        let html = Object.entries(grouped).map(([cat, accs]) => `
             <div class="ios-group">
                 <div class="ios-group-header">${cat}</div>
                 ${accs.map(a => {
@@ -492,9 +491,9 @@ class AssetTracker {
                         <span class="snapshot-input-name">${a.name}</span>
                         <input class="snapshot-input-field" type="number" inputmode="decimal"
                             data-account-id="${a.id}" data-category="${cat}"
-                            placeholder="金额" value=""
+                            placeholder="金额" value="${pv || ''}"
                             oninput="app.updateSnapshotTotals()">
-                        <span class="snapshot-prev">${pv ? this.formatMoneyShort(pv) : '—'}</span>
+                        <span class="snapshot-prev">${pv ? '上次 ' + this.formatMoneyShort(pv) : ''}</span>
                     </div>`;
                 }).join('')}
                 <div class="snapshot-subtotal"><span>小计</span><strong data-subtotal="${cat}">¥0</strong></div>
@@ -504,17 +503,6 @@ class AssetTracker {
         html += '<div class="snapshot-total-bar"><span class="label">总计</span><span class="value" id="snapshot-grand-total">¥0</span></div>';
         c.innerHTML = html;
         this.updateSnapshotTotals();
-    }
-
-    copyLastSnapshot() {
-        const snap = this.getLatestSnapshot();
-        if (!snap) return;
-        document.querySelectorAll('.snapshot-input-field').forEach(input => {
-            const val = snap.assets[input.dataset.accountId] || 0;
-            input.value = val || '';
-        });
-        this.updateSnapshotTotals();
-        this.toast('已填入上次数据', 'success');
     }
 
     updateSnapshotTotals() {
