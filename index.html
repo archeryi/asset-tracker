@@ -11,8 +11,8 @@
     <meta name="apple-mobile-web-app-title" content="资产管理">
     <link rel="apple-touch-icon" href="icons/icon.svg">
     <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
-    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -112,6 +112,7 @@
             <section class="page" id="page-snapshot">
                 <div class="page-title-bar">
                     <h1 class="large-title">记录快照</h1>
+                    <button class="btn-primary" onclick="app.saveSnapshot()">保存</button>
                 </div>
                 <div class="snapshot-form">
                     <div class="ios-group">
@@ -121,9 +122,6 @@
                         </div>
                     </div>
                     <div id="snapshot-accounts"></div>
-                    <div class="snapshot-save-bar">
-                        <button class="btn-save-snapshot" onclick="app.saveSnapshot()">保存快照</button>
-                    </div>
                 </div>
             </section>
 
