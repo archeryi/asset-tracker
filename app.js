@@ -142,32 +142,47 @@ class AssetTracker {
             }
         };
 
+        // 用 AbortController 确保每次重新绑定时清理旧的全局监听
+        if (container._swipeAbort) container._swipeAbort.abort();
+        const controller = new AbortController();
+        container._swipeAbort = controller;
+
         container.querySelectorAll('.swipe-row').forEach(row => {
             const content = row.querySelector('.swipe-row-content');
             const bg = row.querySelector('.swipe-delete-bg');
-            let startX = 0, deltaX = 0, swiping = false;
+            let startX = 0, startY = 0, deltaX = 0, swiping = false, isHorizontal = null;
 
             content.addEventListener('touchstart', (e) => {
-                if (currentOpen && currentOpen !== content) {
-                    closeAll();
-                }
+                if (currentOpen && currentOpen !== content) closeAll();
                 startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                deltaX = 0;
                 swiping = true;
+                isHorizontal = null;
                 content.style.transition = 'none';
             }, { passive: true });
 
             content.addEventListener('touchmove', (e) => {
                 if (!swiping) return;
-                deltaX = e.touches[0].clientX - startX;
-                if (deltaX < 0) {
-                    content.style.transform = `translateX(${Math.max(deltaX, -80)}px)`;
+                const dx = e.touches[0].clientX - startX;
+                const dy = e.touches[0].clientY - startY;
+
+                // 判断方向（首次移动超过 5px 时锁定）
+                if (isHorizontal === null && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
+                    isHorizontal = Math.abs(dx) > Math.abs(dy);
+                }
+
+                if (isHorizontal && dx < 0) {
+                    deltaX = dx;
+                    content.style.transform = `translateX(${Math.max(dx, -80)}px)`;
                 }
             }, { passive: true });
 
             content.addEventListener('touchend', () => {
                 swiping = false;
                 content.style.transition = '';
-                if (deltaX < -50) {
+
+                if (isHorizontal && deltaX < -50) {
                     content.style.transform = 'translateX(-80px)';
                     currentOpen = content;
                     if (bg) {
@@ -182,21 +197,16 @@ class AssetTracker {
                     if (currentOpen === content) currentOpen = null;
                 }
                 deltaX = 0;
-            });
-
-            content.addEventListener('click', () => {
-                if (currentOpen === content) {
-                    closeAll();
-                }
+                isHorizontal = null;
             });
         });
 
-        // 点击其他区域收起
+        // 全局点击收起（使用 AbortController 管理生命周期）
         document.addEventListener('touchstart', (e) => {
             if (currentOpen && !currentOpen.closest('.swipe-row').contains(e.target)) {
                 closeAll();
             }
-        }, { passive: true });
+        }, { passive: true, signal: controller.signal });
     }
 
     preventDoubleTapZoom() {
@@ -349,6 +359,12 @@ class AssetTracker {
 
     renderTrendChart(snapshots) {
         const ctx = document.getElementById('chart-trend');
+        if (!window.Chart) return; // defer 加载中
+        // 脏检查：数据没变就不重绘
+        const hash = snapshots.map(s => s.date + this.getSnapshotTotal(s)).join('|');
+        if (this._trendHash === hash && this.charts.trend) return;
+        this._trendHash = hash;
+
         if (this.charts.trend) this.charts.trend.destroy();
         if (!snapshots.length) {
             this.charts.trend = new Chart(ctx, {
@@ -382,7 +398,7 @@ class AssetTracker {
 
     renderAllocationChart(snapshot) {
         const ctx = document.getElementById('chart-allocation');
-        if (this.charts.allocation) this.charts.allocation.destroy();
+        if (!window.Chart) return;
         const ct = {};
         this.data.accounts.forEach(a => {
             const v = snapshot.assets[a.id] || 0;
@@ -390,6 +406,13 @@ class AssetTracker {
         });
         const labels = Object.keys(ct), data = Object.values(ct);
         if (!labels.length) return;
+
+        // 脏检查
+        const hash = labels.join(',') + '|' + data.join(',');
+        if (this._allocHash === hash && this.charts.allocation) return;
+        this._allocHash = hash;
+
+        if (this.charts.allocation) this.charts.allocation.destroy();
         this.charts.allocation = new Chart(ctx, {
             type: 'doughnut',
             data: { labels, datasets: [{ data, backgroundColor: labels.map((_, i) => CATEGORY_COLORS[i % CATEGORY_COLORS.length]), borderWidth: 0, hoverOffset: 6 }] },
@@ -898,3 +921,13 @@ class AssetTracker {
 
 const app = new AssetTracker();
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') app.closeSheet(); });
+
+// Chart.js 是 defer 加载的，加载完后重新渲染图表
+if (!window.Chart) {
+    const checkChart = setInterval(() => {
+        if (window.Chart) {
+            clearInterval(checkChart);
+            app.renderDashboard();
+        }
+    }, 100);
+}
