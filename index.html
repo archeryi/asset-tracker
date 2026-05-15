@@ -112,7 +112,6 @@
             <section class="page" id="page-snapshot">
                 <div class="page-title-bar">
                     <h1 class="large-title">记录快照</h1>
-                    <button class="btn-primary" onclick="app.saveSnapshot()">保存</button>
                 </div>
                 <div class="snapshot-form">
                     <div class="ios-group">
@@ -122,6 +121,9 @@
                         </div>
                     </div>
                     <div id="snapshot-accounts"></div>
+                    <div class="snapshot-save-bar">
+                        <button class="btn-save-snapshot" onclick="app.saveSnapshot()">保存快照</button>
+                    </div>
                 </div>
             </section>
 

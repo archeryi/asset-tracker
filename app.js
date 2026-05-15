@@ -142,32 +142,43 @@ class AssetTracker {
             }
         };
 
+        // 清理上一次绑定的全局监听
+        if (container._swipeAbort) container._swipeAbort.abort();
+        const controller = new AbortController();
+        container._swipeAbort = controller;
+
         container.querySelectorAll('.swipe-row').forEach(row => {
             const content = row.querySelector('.swipe-row-content');
             const bg = row.querySelector('.swipe-delete-bg');
-            let startX = 0, deltaX = 0, swiping = false;
+            let startX = 0, startY = 0, deltaX = 0, swiping = false, isHorizontal = null;
 
             content.addEventListener('touchstart', (e) => {
-                if (currentOpen && currentOpen !== content) {
-                    closeAll();
-                }
+                if (currentOpen && currentOpen !== content) closeAll();
                 startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                deltaX = 0;
                 swiping = true;
+                isHorizontal = null;
                 content.style.transition = 'none';
             }, { passive: true });
 
             content.addEventListener('touchmove', (e) => {
                 if (!swiping) return;
-                deltaX = e.touches[0].clientX - startX;
-                if (deltaX < 0) {
-                    content.style.transform = `translateX(${Math.max(deltaX, -80)}px)`;
+                const dx = e.touches[0].clientX - startX;
+                const dy = e.touches[0].clientY - startY;
+                if (isHorizontal === null && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
+                    isHorizontal = Math.abs(dx) > Math.abs(dy);
+                }
+                if (isHorizontal && dx < 0) {
+                    deltaX = dx;
+                    content.style.transform = `translateX(${Math.max(dx, -80)}px)`;
                 }
             }, { passive: true });
 
             content.addEventListener('touchend', () => {
                 swiping = false;
                 content.style.transition = '';
-                if (deltaX < -50) {
+                if (isHorizontal && deltaX < -50) {
                     content.style.transform = 'translateX(-80px)';
                     currentOpen = content;
                     if (bg) {
@@ -182,21 +193,20 @@ class AssetTracker {
                     if (currentOpen === content) currentOpen = null;
                 }
                 deltaX = 0;
+                isHorizontal = null;
             });
 
             content.addEventListener('click', () => {
-                if (currentOpen === content) {
-                    closeAll();
-                }
+                if (currentOpen === content) closeAll();
             });
         });
 
-        // 点击其他区域收起
+        // 全局点击收起（受 AbortController 管理）
         document.addEventListener('touchstart', (e) => {
             if (currentOpen && !currentOpen.closest('.swipe-row').contains(e.target)) {
                 closeAll();
             }
-        }, { passive: true });
+        }, { passive: true, signal: controller.signal });
     }
 
     preventDoubleTapZoom() {
@@ -349,6 +359,10 @@ class AssetTracker {
 
     renderTrendChart(snapshots) {
         const ctx = document.getElementById('chart-trend');
+        // 脏检查
+        const hash = snapshots.map(s => s.date + ':' + this.getSnapshotTotal(s)).join('|');
+        if (this._trendHash === hash && this.charts.trend) return;
+        this._trendHash = hash;
         if (this.charts.trend) this.charts.trend.destroy();
         if (!snapshots.length) {
             this.charts.trend = new Chart(ctx, {
