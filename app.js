@@ -445,22 +445,23 @@ class AssetTracker {
         const grouped = {};
         this.data.accounts.forEach(a => { if (!grouped[a.category]) grouped[a.category] = []; grouped[a.category].push(a); });
 
-        list.innerHTML = Object.entries(grouped).map(([cat, accs]) => `
-            <div class="ios-group">
-                <div class="ios-group-header">${cat}</div>
-                ${accs.map(a => {
-                    const bal = snap ? (snap.assets[a.id] || 0) : 0;
-                    return `<div class="swipe-row" data-id="${a.id}">
-                        <div class="swipe-delete-bg">删除</div>
-                        <div class="swipe-row-content" onclick="app.showEditAccount('${a.id}')">
-                            <div class="account-row-left"><div class="account-row-name">${a.name}</div></div>
-                            <span class="account-row-balance">${this.formatMoney(bal)}</span>
-                            <svg class="account-row-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2.5"><polyline points="9,6 15,12 9,18"/></svg>
-                        </div>
-                    </div>`;
-                }).join('')}
-            </div>
-        `).join('');
+        let rows = '';
+        Object.entries(grouped).forEach(([cat, accs]) => {
+            rows += `<div class="account-section-header">${cat}</div>`;
+            rows += accs.map(a => {
+                const bal = snap ? (snap.assets[a.id] || 0) : 0;
+                return `<div class="swipe-row" data-id="${a.id}">
+                    <div class="swipe-delete-bg">删除</div>
+                    <div class="swipe-row-content" onclick="app.showEditAccount('${a.id}')">
+                        <div class="account-row-left"><div class="account-row-name">${a.name}</div></div>
+                        <span class="account-row-balance">${this.formatMoney(bal)}</span>
+                        <svg class="account-row-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2.5"><polyline points="9,6 15,12 9,18"/></svg>
+                    </div>
+                </div>`;
+            }).join('');
+        });
+
+        list.innerHTML = `<div class="ios-group">${rows}</div>`;
 
         this.bindSwipeDelete(list, (id) => this.deleteAccount(id));
     }
