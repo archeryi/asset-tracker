@@ -711,16 +711,16 @@ class AssetTracker {
 
     calcAnnualizedReturn(startVal, endVal, days) {
         if (startVal <= 0 || days < 1) return null;
-        const ratio = endVal / startVal;
-        if (ratio <= 0) return null;
-        return Math.pow(ratio, 365 / days) - 1;
+        // 简单年化：(收益率) * (365/天数)
+        const returnRate = (endVal - startVal) / startVal;
+        return returnRate * (365 / days);
     }
 
     formatAnnualized(rate) {
         if (rate === null) return '';
         const pct = (rate * 100).toFixed(1);
         const cls = rate >= 0 ? 'positive' : 'negative';
-        return `<span class="annualized ${cls}">${rate >= 0 ? '+' : ''}${pct}%/年</span>`;
+        return `<span class="annualized ${cls}">年化 ${rate >= 0 ? '+' : ''}${pct}%</span>`;
     }
 
     renderCategoryRank() {
@@ -752,7 +752,10 @@ class AssetTracker {
         el.innerHTML = sorted.map(({ name, change, annualized }) =>
             `<div class="category-rank-row">
                 <span class="category-rank-name">${name}</span>
-                <span class="category-rank-change ${change >= 0 ? 'positive' : 'negative'}">${change >= 0 ? '+' : ''}${this.formatMoneyShort(change)} ${this.formatAnnualized(annualized)}</span>
+                <div class="rank-values">
+                    <span class="category-rank-change ${change >= 0 ? 'positive' : 'negative'}">${change >= 0 ? '+' : ''}${this.formatMoneyShort(change)}</span>
+                    ${this.formatAnnualized(annualized)}
+                </div>
             </div>`
         ).join('');
     }
@@ -787,7 +790,10 @@ class AssetTracker {
         el.innerHTML = accChanges.map(({ name, change, annualized }) =>
             `<div class="category-rank-row">
                 <span class="category-rank-name">${name}</span>
-                <span class="category-rank-change ${change >= 0 ? 'positive' : 'negative'}">${change >= 0 ? '+' : ''}${this.formatMoneyShort(change)} ${this.formatAnnualized(annualized)}</span>
+                <div class="rank-values">
+                    <span class="category-rank-change ${change >= 0 ? 'positive' : 'negative'}">${change >= 0 ? '+' : ''}${this.formatMoneyShort(change)}</span>
+                    ${this.formatAnnualized(annualized)}
+                </div>
             </div>`
         ).join('');
     }

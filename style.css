@@ -162,12 +162,13 @@ body {
 }
 .category-rank-row:last-child { border-bottom: none; }
 .category-rank-name { flex: 1; }
-.category-rank-change { font-weight: 600; min-width: 80px; text-align: right; }
+.rank-values { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.category-rank-change { font-weight: 600; text-align: right; }
 .category-rank-change.positive { color: var(--green); }
 .category-rank-change.negative { color: var(--red); }
-.annualized { font-size: 11px; font-weight: 400; opacity: 0.7; margin-left: 4px; }
-.annualized.positive { color: var(--green); }
-.annualized.negative { color: var(--red); }
+.annualized { font-size: 11px; font-weight: 400; color: var(--text-muted); text-align: right; }
+.annualized.positive { color: var(--green); opacity: 0.75; }
+.annualized.negative { color: var(--red); opacity: 0.75; }
 
 /* ==================== iOS Grouped List ==================== */
 .ios-group {
