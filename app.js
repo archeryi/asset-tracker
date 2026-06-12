@@ -720,7 +720,7 @@ class AssetTracker {
         if (rate === null) return '';
         const pct = (rate * 100).toFixed(1);
         const cls = rate >= 0 ? 'positive' : 'negative';
-        return `<span class="annualized ${cls}">年化 ${rate >= 0 ? '+' : ''}${pct}%</span>`;
+        return `<span class="annualized ${cls}">${rate >= 0 ? '+' : ''}${pct}%/yr</span>`;
     }
 
     renderCategoryRank() {
@@ -745,13 +745,13 @@ class AssetTracker {
         });
 
         const sorted = Object.entries(catData).map(([name, d]) => ({
-            name, change: d.end - d.start,
+            name, endVal: d.end, change: d.end - d.start,
             annualized: this.calcAnnualizedReturn(d.start, d.end, days)
         })).sort((a, b) => b.change - a.change);
 
-        el.innerHTML = sorted.map(({ name, change, annualized }) =>
+        el.innerHTML = sorted.map(({ name, endVal, change, annualized }) =>
             `<div class="category-rank-row">
-                <span class="category-rank-name">${name}</span>
+                <span class="category-rank-name">${name}<span class="rank-current">${this.formatMoneyShort(endVal)}</span></span>
                 <div class="rank-values">
                     <span class="category-rank-change ${change >= 0 ? 'positive' : 'negative'}">${change >= 0 ? '+' : ''}${this.formatMoneyShort(change)}</span>
                     ${this.formatAnnualized(annualized)}
@@ -776,7 +776,7 @@ class AssetTracker {
             const startVal = firstSnap.assets[a.id] || 0;
             const endVal = lastSnap.assets[a.id] || 0;
             return {
-                name: a.name, category: a.category,
+                name: a.name, endVal,
                 change: endVal - startVal,
                 annualized: this.calcAnnualizedReturn(startVal, endVal, days)
             };
@@ -787,9 +787,9 @@ class AssetTracker {
             return;
         }
 
-        el.innerHTML = accChanges.map(({ name, change, annualized }) =>
+        el.innerHTML = accChanges.map(({ name, endVal, change, annualized }) =>
             `<div class="category-rank-row">
-                <span class="category-rank-name">${name}</span>
+                <span class="category-rank-name">${name}<span class="rank-current">${this.formatMoneyShort(endVal)}</span></span>
                 <div class="rank-values">
                     <span class="category-rank-change ${change >= 0 ? 'positive' : 'negative'}">${change >= 0 ? '+' : ''}${this.formatMoneyShort(change)}</span>
                     ${this.formatAnnualized(annualized)}
