@@ -624,6 +624,7 @@ class AssetTracker {
         this.updateHistoryChart();
         this.renderPeriodStats();
         this.renderCategoryRank();
+        this.renderAccountRank();
         this.renderHistoryList();
     }
 
@@ -730,6 +731,36 @@ class AssetTracker {
         el.innerHTML = sorted.map(([name, change]) =>
             `<div class="category-rank-row">
                 <span class="category-rank-name">${name}</span>
+                <span class="category-rank-change ${change >= 0 ? 'positive' : 'negative'}">${change >= 0 ? '+' : ''}${this.formatMoneyShort(change)}</span>
+            </div>`
+        ).join('');
+    }
+
+    renderAccountRank() {
+        const el = document.getElementById('account-rank');
+        const range = parseInt(document.getElementById('history-range').value);
+        let snaps = [...this.data.snapshots].sort((a, b) => a.date.localeCompare(b.date));
+        if (range > 0) {
+            const co = new Date(); co.setMonth(co.getMonth() - range);
+            snaps = snaps.filter(s => s.date >= co.toISOString().split('T')[0]);
+        }
+        if (snaps.length < 2) { el.innerHTML = '<div style="padding:16px;color:var(--text-muted);font-size:14px">数据不足</div>'; return; }
+
+        const firstSnap = snaps[0], lastSnap = snaps[snaps.length - 1];
+        const accChanges = this.data.accounts.map(a => {
+            const startVal = firstSnap.assets[a.id] || 0;
+            const endVal = lastSnap.assets[a.id] || 0;
+            return { name: a.name, category: a.category, change: endVal - startVal };
+        }).filter(x => x.change !== 0).sort((a, b) => b.change - a.change);
+
+        if (!accChanges.length) {
+            el.innerHTML = '<div style="padding:16px;color:var(--text-muted);font-size:14px">期间无变化</div>';
+            return;
+        }
+
+        el.innerHTML = accChanges.map(({ name, category, change }) =>
+            `<div class="category-rank-row">
+                <span class="category-rank-name">${name} <span style="font-size:11px;color:var(--text-muted)">${category}</span></span>
                 <span class="category-rank-change ${change >= 0 ? 'positive' : 'negative'}">${change >= 0 ? '+' : ''}${this.formatMoneyShort(change)}</span>
             </div>`
         ).join('');
