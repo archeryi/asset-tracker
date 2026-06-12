@@ -751,12 +751,8 @@ class AssetTracker {
 
         el.innerHTML = sorted.map(({ name, endVal, change, annualized }) =>
             `<div class="category-rank-row">
-                <span class="category-rank-name">${name}</span>
-                <span class="rank-current">${this.formatMoneyShort(endVal)}</span>
-                <div class="rank-values">
-                    <span class="category-rank-change ${change >= 0 ? 'positive' : 'negative'}">${change >= 0 ? '+' : ''}${this.formatMoneyShort(change)}</span>
-                    ${this.formatAnnualized(annualized)}
-                </div>
+                <div class="rank-main"><span class="category-rank-name">${name}</span><span class="rank-current">${this.formatMoneyShort(endVal)}</span></div>
+                <div class="rank-sub"><span class="category-rank-change ${change >= 0 ? 'positive' : 'negative'}">${change >= 0 ? '+' : ''}${this.formatMoneyShort(change)}</span>${this.formatAnnualized(annualized)}</div>
             </div>`
         ).join('');
     }
@@ -790,12 +786,8 @@ class AssetTracker {
 
         el.innerHTML = accChanges.map(({ name, endVal, change, annualized }) =>
             `<div class="category-rank-row">
-                <span class="category-rank-name">${name}</span>
-                <span class="rank-current">${this.formatMoneyShort(endVal)}</span>
-                <div class="rank-values">
-                    <span class="category-rank-change ${change >= 0 ? 'positive' : 'negative'}">${change >= 0 ? '+' : ''}${this.formatMoneyShort(change)}</span>
-                    ${this.formatAnnualized(annualized)}
-                </div>
+                <div class="rank-main"><span class="category-rank-name">${name}</span><span class="rank-current">${this.formatMoneyShort(endVal)}</span></div>
+                <div class="rank-sub"><span class="category-rank-change ${change >= 0 ? 'positive' : 'negative'}">${change >= 0 ? '+' : ''}${this.formatMoneyShort(change)}</span>${this.formatAnnualized(annualized)}</div>
             </div>`
         ).join('');
     }
