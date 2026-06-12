@@ -709,6 +709,20 @@ class AssetTracker {
         `;
     }
 
+    calcAnnualizedReturn(startVal, endVal, days) {
+        if (startVal <= 0 || days < 1) return null;
+        const ratio = endVal / startVal;
+        if (ratio <= 0) return null;
+        return Math.pow(ratio, 365 / days) - 1;
+    }
+
+    formatAnnualized(rate) {
+        if (rate === null) return '';
+        const pct = (rate * 100).toFixed(1);
+        const cls = rate >= 0 ? 'positive' : 'negative';
+        return `<span class="annualized ${cls}">${rate >= 0 ? '+' : ''}${pct}%/年</span>`;
+    }
+
     renderCategoryRank() {
         const el = document.getElementById('category-rank');
         const range = parseInt(document.getElementById('history-range').value);
@@ -720,18 +734,25 @@ class AssetTracker {
         if (snaps.length < 2) { el.innerHTML = '<div style="padding:16px;color:var(--text-muted);font-size:14px">数据不足</div>'; return; }
 
         const firstSnap = snaps[0], lastSnap = snaps[snaps.length - 1];
-        const catChanges = {};
+        const days = (new Date(lastSnap.date) - new Date(firstSnap.date)) / (1000 * 60 * 60 * 24);
+        const catData = {};
         this.data.accounts.forEach(a => {
             const startVal = firstSnap.assets[a.id] || 0;
             const endVal = lastSnap.assets[a.id] || 0;
-            catChanges[a.category] = (catChanges[a.category] || 0) + (endVal - startVal);
+            if (!catData[a.category]) catData[a.category] = { start: 0, end: 0 };
+            catData[a.category].start += startVal;
+            catData[a.category].end += endVal;
         });
 
-        const sorted = Object.entries(catChanges).sort((a, b) => b[1] - a[1]);
-        el.innerHTML = sorted.map(([name, change]) =>
+        const sorted = Object.entries(catData).map(([name, d]) => ({
+            name, change: d.end - d.start,
+            annualized: this.calcAnnualizedReturn(d.start, d.end, days)
+        })).sort((a, b) => b.change - a.change);
+
+        el.innerHTML = sorted.map(({ name, change, annualized }) =>
             `<div class="category-rank-row">
                 <span class="category-rank-name">${name}</span>
-                <span class="category-rank-change ${change >= 0 ? 'positive' : 'negative'}">${change >= 0 ? '+' : ''}${this.formatMoneyShort(change)}</span>
+                <span class="category-rank-change ${change >= 0 ? 'positive' : 'negative'}">${change >= 0 ? '+' : ''}${this.formatMoneyShort(change)} ${this.formatAnnualized(annualized)}</span>
             </div>`
         ).join('');
     }
@@ -747,10 +768,15 @@ class AssetTracker {
         if (snaps.length < 2) { el.innerHTML = '<div style="padding:16px;color:var(--text-muted);font-size:14px">数据不足</div>'; return; }
 
         const firstSnap = snaps[0], lastSnap = snaps[snaps.length - 1];
+        const days = (new Date(lastSnap.date) - new Date(firstSnap.date)) / (1000 * 60 * 60 * 24);
         const accChanges = this.data.accounts.map(a => {
             const startVal = firstSnap.assets[a.id] || 0;
             const endVal = lastSnap.assets[a.id] || 0;
-            return { name: a.name, category: a.category, change: endVal - startVal };
+            return {
+                name: a.name, category: a.category,
+                change: endVal - startVal,
+                annualized: this.calcAnnualizedReturn(startVal, endVal, days)
+            };
         }).filter(x => x.change !== 0).sort((a, b) => b.change - a.change);
 
         if (!accChanges.length) {
@@ -758,10 +784,10 @@ class AssetTracker {
             return;
         }
 
-        el.innerHTML = accChanges.map(({ name, category, change }) =>
+        el.innerHTML = accChanges.map(({ name, category, change, annualized }) =>
             `<div class="category-rank-row">
                 <span class="category-rank-name">${name} <span style="font-size:11px;color:var(--text-muted)">${category}</span></span>
-                <span class="category-rank-change ${change >= 0 ? 'positive' : 'negative'}">${change >= 0 ? '+' : ''}${this.formatMoneyShort(change)}</span>
+                <span class="category-rank-change ${change >= 0 ? 'positive' : 'negative'}">${change >= 0 ? '+' : ''}${this.formatMoneyShort(change)} ${this.formatAnnualized(annualized)}</span>
             </div>`
         ).join('');
     }
