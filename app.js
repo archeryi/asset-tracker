@@ -784,9 +784,9 @@ class AssetTracker {
             return;
         }
 
-        el.innerHTML = accChanges.map(({ name, category, change, annualized }) =>
+        el.innerHTML = accChanges.map(({ name, change, annualized }) =>
             `<div class="category-rank-row">
-                <span class="category-rank-name">${name} <span style="font-size:11px;color:var(--text-muted)">${category}</span></span>
+                <span class="category-rank-name">${name}</span>
                 <span class="category-rank-change ${change >= 0 ? 'positive' : 'negative'}">${change >= 0 ? '+' : ''}${this.formatMoneyShort(change)} ${this.formatAnnualized(annualized)}</span>
             </div>`
         ).join('');
