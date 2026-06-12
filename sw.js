@@ -1,4 +1,4 @@
-const CACHE_NAME = 'asset-tracker-v22';
+const CACHE_NAME = 'asset-tracker-v23';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
