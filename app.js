@@ -7,18 +7,25 @@ class AssetTracker {
         this.data = this.loadData();
         this.charts = {};
         this._initialized = false;
-        this.init();
+        this.setup();
     }
 
+    // 首屏轻量启动：只绑定事件 + 渲染当前可见的「总览」页，
+    // 其余页面在切换时由 bindNavigation 懒渲染，避免进入时白做功。
+    setup() {
+        this.createToastContainer();
+        this.bindNavigation();
+        this.bindSheetGesture();
+        this.preventDoubleTapZoom();
+        this.restoreHideAmounts();
+        this._initialized = true;
+        this.renderDashboard();
+        this.setSnapshotDate();
+    }
+
+    // 全量刷新（导入/清除数据后调用）
     init() {
-        if (!this._initialized) {
-            this.createToastContainer();
-            this.bindNavigation();
-            this.bindSheetGesture();
-            this.preventDoubleTapZoom();
-            this.restoreHideAmounts();
-            this._initialized = true;
-        }
+        if (!this._initialized) this.setup();
         this.renderDashboard();
         this.renderAccounts();
         this.renderSnapshotForm();
