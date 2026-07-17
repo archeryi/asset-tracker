@@ -102,6 +102,10 @@
                         <canvas id="chart-allocation"></canvas>
                     </div>
                     <div class="chart-container half">
+                        <h3>账户占比</h3>
+                        <canvas id="chart-account-allocation"></canvas>
+                    </div>
+                    <div class="chart-container full">
                         <h3>各类别资产</h3>
                         <div class="category-list" id="category-list"></div>
                     </div>
@@ -117,7 +121,7 @@
                     <div class="ios-group">
                         <div class="ios-row">
                             <span class="ios-row-label">记录日期</span>
-                            <input type="date" id="snapshot-date" class="ios-row-value">
+                            <input type="date" id="snapshot-date" class="ios-row-value" onchange="app.renderSnapshotForm()">
                         </div>
                     </div>
                     <div id="snapshot-accounts"></div>

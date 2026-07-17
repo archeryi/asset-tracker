@@ -1,5 +1,5 @@
 const STORAGE_KEY = 'asset-tracker-data';
-const DEFAULT_CATEGORIES = ['现金存款', '基金', '股票', '房产', '保险', '加密货币', '其他'];
+const DEFAULT_CATEGORIES = ['现金存款', '基金', '股票', '房产', '保险', '加密货币', '其他', '负债'];
 const CATEGORY_COLORS = ['#0a84ff','#30d158','#ff9f0a','#ff453a','#bf5af2','#64d2ff','#ff375f','#32d74b'];
 
 class AssetTracker {
@@ -269,26 +269,12 @@ class AssetTracker {
         this.animateNumber('total-assets', total);
         document.getElementById('last-update').textContent = latest ? `更新于 ${latest.date}` : '';
 
-        // 本月变化：对比 30 天前最近的快照
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        const thirtyStr = thirtyDaysAgo.toISOString().split('T')[0];
-        const monthAgoSnap = [...snapshots].reverse().find(s => s.date <= thirtyStr);
-
-        if (latest && monthAgoSnap && monthAgoSnap !== latest) {
-            const pt = this.getSnapshotTotal(monthAgoSnap);
-            const change = total - pt;
-            const pct = pt > 0 ? (change / pt * 100).toFixed(2) : 0;
-            this.animateNumber('month-change', change);
-            const el = document.getElementById('month-change-pct');
-            el.textContent = `${change >= 0 ? '+' : ''}${pct}%`;
-            el.className = `card-change ${change >= 0 ? 'positive' : 'negative'}`;
-        } else if (latest && snapshots.length >= 2) {
-            // 回退：对比上一次快照
+        // 较上次：直接对比上一笔快照（用户约每月固定记录一次，口径清晰）
+        if (latest && snapshots.length >= 2) {
             const prev = snapshots[snapshots.length - 2];
             const pt = this.getSnapshotTotal(prev);
             const change = total - pt;
-            const pct = pt > 0 ? (change / pt * 100).toFixed(2) : 0;
+            const pct = pt !== 0 ? (change / Math.abs(pt) * 100).toFixed(2) : 0;
             this.animateNumber('month-change', change);
             const el = document.getElementById('month-change-pct');
             el.textContent = `${change >= 0 ? '+' : ''}${pct}%`;
@@ -298,13 +284,15 @@ class AssetTracker {
             document.getElementById('month-change-pct').textContent = '';
         }
 
-        // 年度收益：对比今年 1 月 1 日之后的第一笔快照
+        // 年度收益：优先用「去年最后一笔快照」作为年初基准；若无（缺年初数据）则回退到今年第一笔
         const yearStart = new Date().getFullYear() + '-01-01';
+        const lastYearSnap = [...snapshots].reverse().find(s => s.date < yearStart);
         const yearFirstSnap = snapshots.find(s => s.date >= yearStart);
-        if (latest && yearFirstSnap && yearFirstSnap !== latest) {
-            const yStart = this.getSnapshotTotal(yearFirstSnap);
+        const yearBase = lastYearSnap || yearFirstSnap;
+        if (latest && yearBase && yearBase !== latest) {
+            const yStart = this.getSnapshotTotal(yearBase);
             const yChange = total - yStart;
-            const yPct = yStart > 0 ? (yChange / yStart * 100).toFixed(2) : 0;
+            const yPct = yStart !== 0 ? (yChange / Math.abs(yStart) * 100).toFixed(2) : 0;
             this.animateNumber('year-change', yChange);
             const yEl = document.getElementById('year-change-pct');
             yEl.textContent = `${yChange >= 0 ? '+' : ''}${yPct}%`;
@@ -335,6 +323,7 @@ class AssetTracker {
         this.renderTrendChart(snapshots);
         if (latest) {
             this.renderAllocationChart(latest);
+            this.renderAccountAllocationChart(latest);
             this.renderCategoryList(latest);
         } else {
             document.getElementById('category-list').innerHTML =
@@ -349,6 +338,8 @@ class AssetTracker {
         const currentText = el.textContent.replace(/[¥,万]/g, '');
         let from = parseFloat(currentText) || 0;
         if (el.textContent.includes('万')) from *= 10000;
+        // 去抖：数值几乎没变化时直接赋值，避免频繁切 tab 反复滚动
+        if (Math.abs(target - from) < 0.5) { el.textContent = this.formatMoney(target); return; }
         const duration = 400;
         const start = performance.now();
         const step = (now) => {
@@ -362,6 +353,10 @@ class AssetTracker {
 
     getSnapshotTotal(s) {
         return Object.values(s.assets).reduce((sum, v) => sum + (v || 0), 0);
+    }
+
+    isHidden() {
+        return document.querySelector('.app').classList.contains('hide-amounts');
     }
 
     renderTrendChart(snapshots) {
@@ -392,13 +387,62 @@ class AssetTracker {
             },
             options: {
                 responsive: true,
-                plugins: { legend: { display: false }, tooltip: { callbacks: { label: (i) => '¥' + i.raw.toLocaleString() } } },
+                plugins: { legend: { display: false }, tooltip: { callbacks: { label: (i) => this.isHidden() ? '****' : '¥' + i.raw.toLocaleString() } } },
                 scales: {
                     x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#636366', maxTicksLimit: 6 } },
-                    y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#636366', callback: v => '¥' + (v / 10000).toFixed(0) + '万' } }
+                    y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#636366', callback: v => this.isHidden() ? '' : '¥' + (v / 10000).toFixed(0) + '万' } }
                 }
             }
         });
+    }
+
+    // 类别 → 颜色的稳定映射（按类别在列表中的索引），使两个饼图色彩呼应
+    categoryColor(cat) {
+        const idx = this.data.categories.indexOf(cat);
+        return CATEGORY_COLORS[(idx < 0 ? 0 : idx) % CATEGORY_COLORS.length];
+    }
+
+    // 提亮颜色：用于同类别下多个账户的区分
+    shadeColor(hex, percent) {
+        const n = parseInt(hex.slice(1), 16);
+        let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+        r = Math.min(255, Math.round(r + (255 - r) * percent));
+        g = Math.min(255, Math.round(g + (255 - g) * percent));
+        b = Math.min(255, Math.round(b + (255 - b) * percent));
+        return `rgb(${r},${g},${b})`;
+    }
+
+    // 饼图空状态占位
+    _setChartEmpty(canvasId, empty) {
+        const cv = document.getElementById(canvasId);
+        if (!cv) return;
+        let ph = cv.parentElement.querySelector('.chart-empty');
+        if (empty) {
+            cv.style.display = 'none';
+            if (!ph) {
+                ph = document.createElement('div');
+                ph.className = 'chart-empty';
+                ph.textContent = '暂无数据';
+                cv.parentElement.appendChild(ph);
+            }
+            ph.style.display = '';
+        } else {
+            cv.style.display = '';
+            if (ph) ph.style.display = 'none';
+        }
+    }
+
+    _doughnutTooltip() {
+        return {
+            callbacks: {
+                label: (i) => {
+                    const t = i.dataset.data.reduce((a, b) => a + b, 0);
+                    const pct = ((i.raw / t) * 100).toFixed(1);
+                    if (this.isHidden()) return `${i.label}: **** (${pct}%)`;
+                    return `${i.label}: ¥${i.raw.toLocaleString()} (${pct}%)`;
+                }
+            }
+        };
     }
 
     renderAllocationChart(snapshot) {
@@ -407,25 +451,49 @@ class AssetTracker {
         const ct = {};
         this.data.accounts.forEach(a => {
             const v = snapshot.assets[a.id] || 0;
-            if (v > 0) ct[a.category] = (ct[a.category] || 0) + v;
+            if (v > 0) ct[a.category] = (ct[a.category] || 0) + v; // 仅正资产进配置图，负债不参与
         });
         const labels = Object.keys(ct), data = Object.values(ct);
+        this._setChartEmpty('chart-allocation', !labels.length);
         if (!labels.length) return;
         this.charts.allocation = new Chart(ctx, {
             type: 'doughnut',
-            data: { labels, datasets: [{ data, backgroundColor: labels.map((_, i) => CATEGORY_COLORS[i % CATEGORY_COLORS.length]), borderWidth: 0, hoverOffset: 6 }] },
+            data: { labels, datasets: [{ data, backgroundColor: labels.map(l => this.categoryColor(l)), borderWidth: 0, hoverOffset: 6 }] },
             options: {
                 responsive: true, cutout: '68%',
                 plugins: {
                     legend: { position: 'bottom', labels: { color: '#8e8e93', padding: 10, font: { size: 11 } } },
-                    tooltip: {
-                        callbacks: {
-                            label: (i) => {
-                                const t = i.dataset.data.reduce((a, b) => a + b, 0);
-                                return `${i.label}: ¥${i.raw.toLocaleString()} (${((i.raw / t) * 100).toFixed(1)}%)`;
-                            }
-                        }
-                    }
+                    tooltip: this._doughnutTooltip()
+                }
+            }
+        });
+    }
+
+    renderAccountAllocationChart(snapshot) {
+        const ctx = document.getElementById('chart-account-allocation');
+        if (this.charts.accountAllocation) this.charts.accountAllocation.destroy();
+        const items = this.data.accounts
+            .map(a => ({ name: a.name, category: a.category, value: snapshot.assets[a.id] || 0 }))
+            .filter(x => x.value > 0)
+            .sort((a, b) => b.value - a.value);
+        this._setChartEmpty('chart-account-allocation', !items.length);
+        if (!items.length) return;
+        // 账户颜色继承所属类别，同类别多个账户按亮度区分，与左侧类别图呼应
+        const seen = {};
+        const colors = items.map(x => {
+            const base = this.categoryColor(x.category);
+            const k = seen[x.category] = (seen[x.category] || 0) + 1;
+            return k === 1 ? base : this.shadeColor(base, Math.min((k - 1) * 0.18, 0.72));
+        });
+        const labels = items.map(x => x.name), data = items.map(x => x.value);
+        this.charts.accountAllocation = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0, hoverOffset: 6 }] },
+            options: {
+                responsive: true, cutout: '68%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#8e8e93', padding: 10, font: { size: 11 } } },
+                    tooltip: this._doughnutTooltip()
                 }
             }
         });
@@ -442,7 +510,7 @@ class AssetTracker {
             const pct = total > 0 ? ((v / total) * 100).toFixed(1) : 0;
             return `<div class="category-item">
                 <div class="category-item-left">
-                    <div class="category-dot" style="background:${CATEGORY_COLORS[i % CATEGORY_COLORS.length]}"></div>
+                    <div class="category-dot" style="background:${this.categoryColor(n)}"></div>
                     <span class="category-name">${n}</span>
                 </div>
                 <div>
@@ -521,11 +589,13 @@ class AssetTracker {
     }
 
     deleteAccount(id) {
-        this.showActionSheet('此操作不可恢复', [
+        this.showActionSheet('此操作不可恢复，将同时清除该账户在所有历史快照中的记录', [
             {
                 label: '删除账户', destructive: true, action: () => {
                     this.data.accounts = this.data.accounts.filter(a => a.id !== id);
-                    this.saveData(); this.renderAccounts(); this.toast('已删除');
+                    // 清理孤儿数据：同步移除所有快照中该账户的条目，避免总额与明细对不上
+                    this.data.snapshots.forEach(s => { delete s.assets[id]; });
+                    this.saveData(); this.renderAccounts(); this.renderDashboard(); this.toast('已删除');
                 }
             }
         ]);
@@ -533,12 +603,19 @@ class AssetTracker {
 
     // ==================== Snapshot ====================
     setSnapshotDate() {
-        document.getElementById('snapshot-date').value = new Date().toISOString().split('T')[0];
+        const el = document.getElementById('snapshot-date');
+        const today = new Date().toISOString().split('T')[0];
+        el.value = today;
+        el.max = today; // #4 记录日期不能选未来
     }
 
     renderSnapshotForm() {
         const c = document.getElementById('snapshot-accounts');
-        const snap = this.getLatestSnapshot();
+        const dateVal = document.getElementById('snapshot-date').value;
+        // #5 若所选日期已存在快照 → 进入编辑模式，预填该快照原值；否则用最新快照作参考
+        const existing = this.data.snapshots.find(s => s.date === dateVal);
+        const isEditing = !!existing;
+        const snap = existing || this.getLatestSnapshot();
         const grouped = {};
         this.data.accounts.forEach(a => { if (!grouped[a.category]) grouped[a.category] = []; grouped[a.category].push(a); });
 
@@ -550,7 +627,10 @@ class AssetTracker {
             return;
         }
 
-        let html = Object.entries(grouped).map(([cat, accs]) => `
+        let html = isEditing
+            ? `<div class="snapshot-edit-banner">正在编辑 ${dateVal} 的历史记录，保存后将覆盖该日数据</div>`
+            : '';
+        html += Object.entries(grouped).map(([cat, accs]) => `
             <div class="ios-group">
                 <div class="ios-group-header">${cat}</div>
                 ${accs.map(a => {
@@ -559,9 +639,9 @@ class AssetTracker {
                         <span class="snapshot-input-name">${a.name}</span>
                         <input class="snapshot-input-field" type="number" inputmode="decimal"
                             data-account-id="${a.id}" data-category="${cat}"
-                            placeholder="金额" value="${pv || ''}"
+                            placeholder="金额（负债填负数）" value="${pv || ''}"
                             oninput="app.updateSnapshotTotals()">
-                        <span class="snapshot-prev">${pv ? '上次 ' + this.formatMoneyShort(pv) : ''}</span>
+                        <span class="snapshot-prev">${(!isEditing && pv) ? '上次 ' + this.formatMoneyShort(pv) : ''}</span>
                     </div>`;
                 }).join('')}
                 <div class="snapshot-subtotal"><span>小计</span><strong data-subtotal="${cat}">¥0</strong></div>
@@ -598,9 +678,9 @@ class AssetTracker {
         document.querySelectorAll('.snapshot-input-field').forEach(i => {
             const v = parseFloat(i.value) || 0;
             assets[i.dataset.accountId] = v;
-            if (v > 0) has = true;
+            if (v !== 0) has = true;
         });
-        if (!has) { this.toast('请至少填写一个金额', 'error'); return; }
+        if (!has) { this.toast('请至少填写一个金额（负债填负数）', 'error'); return; }
 
         const idx = this.data.snapshots.findIndex(s => s.date === date);
         if (idx >= 0) {
@@ -672,7 +752,7 @@ class AssetTracker {
             if (d.some(v => v > 0)) {
                 ds.push({
                     label: cat, data: d,
-                    borderColor: CATEGORY_COLORS[i % CATEGORY_COLORS.length],
+                    borderColor: this.categoryColor(cat),
                     tension: 0.4, borderWidth: 1.5, pointRadius: 0, borderDash: [4, 4]
                 });
             }
@@ -684,11 +764,11 @@ class AssetTracker {
                 responsive: true, interaction: { mode: 'index', intersect: false },
                 plugins: {
                     legend: { labels: { color: '#8e8e93', font: { size: 11 } } },
-                    tooltip: { callbacks: { label: i => `${i.dataset.label}: ¥${i.raw.toLocaleString()}` } }
+                    tooltip: { callbacks: { label: i => this.isHidden() ? `${i.dataset.label}: ****` : `${i.dataset.label}: ¥${i.raw.toLocaleString()}` } }
                 },
                 scales: {
                     x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#636366', maxTicksLimit: 6 } },
-                    y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#636366', callback: v => '¥' + (v / 10000).toFixed(0) + '万' } }
+                    y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#636366', callback: v => this.isHidden() ? '' : '¥' + (v / 10000).toFixed(0) + '万' } }
                 }
             }
         });
@@ -825,7 +905,10 @@ class AssetTracker {
                     <span class="history-row-change ${ch >= 0 ? 'positive' : 'negative'}">${ch >= 0 ? '+' : ''}${this.formatMoneyShort(ch)}</span>
                 </div>
             </div>
-            <div class="history-detail" id="detail-${i}">${details || '<div class="history-detail-row"><span>无明细</span><span></span></div>'}</div>`;
+            <div class="history-detail" id="detail-${i}">
+                ${details || '<div class="history-detail-row"><span>无明细</span><span></span></div>'}
+                <button class="history-edit-btn" onclick="event.stopPropagation(); app.editSnapshot('${s.date}')">编辑此快照</button>
+            </div>`;
         }).join('');
         this.bindSwipeDelete(c, (date) => this.deleteSnapshot(date));
     }
@@ -833,6 +916,17 @@ class AssetTracker {
     toggleHistoryDetail(id) {
         const el = document.getElementById(id);
         if (el) el.classList.toggle('open');
+    }
+
+    // #5 编辑历史快照：跳到记录页，把日期设为该快照并按其原值预填
+    editSnapshot(date) {
+        const nav = document.querySelector('.nav-item[data-page="snapshot"]');
+        if (nav) nav.click(); // 切换到「记录」页（会先按今天渲染一次）
+        const el = document.getElementById('snapshot-date');
+        if (el) el.value = date; // 覆盖为要编辑的日期
+        this.renderSnapshotForm(); // 按该日期重渲染并预填
+        document.querySelector('.main-content').scrollTop = 0;
+        this.toast('正在编辑 ' + date);
     }
 
     deleteSnapshot(date) {
@@ -908,18 +1002,40 @@ class AssetTracker {
             try {
                 const d = JSON.parse(e.target.result);
                 if (!d.categories || !d.accounts || !d.snapshots) throw new Error('格式不正确');
-                this.showActionSheet('导入将覆盖现有数据', [{
-                    label: '确认导入', destructive: true, action: () => {
-                        this.data = d; this.saveData(); this.init();
-                        this.toast('导入成功', 'success');
+                this.showActionSheet('选择导入方式', [
+                    {
+                        label: '合并（保留现有并补充）', action: () => {
+                            this.mergeImport(d); this.saveData(); this.init();
+                            this.toast('已合并导入', 'success');
+                        }
+                    },
+                    {
+                        label: '覆盖（清空并替换）', destructive: true, action: () => {
+                            this.data = d; this.saveData(); this.init();
+                            this.toast('已覆盖导入', 'success');
+                        }
                     }
-                }]);
+                ]);
             } catch (err) {
                 this.toast('导入失败：' + err.message, 'error');
             }
         };
         r.readAsText(f);
         event.target.value = '';
+    }
+
+    mergeImport(d) {
+        // 类别去重合并
+        (d.categories || []).forEach(c => { if (!this.data.categories.includes(c)) this.data.categories.push(c); });
+        // 账户按 id 合并（已存在则跳过，避免重复）
+        (d.accounts || []).forEach(a => { if (!this.data.accounts.find(x => x.id === a.id)) this.data.accounts.push(a); });
+        // 快照按日期合并：同日期合并明细（导入值优先），新日期直接追加
+        (d.snapshots || []).forEach(ns => {
+            const ex = this.data.snapshots.find(s => s.date === ns.date);
+            if (ex) Object.assign(ex.assets, ns.assets);
+            else this.data.snapshots.push(ns);
+        });
+        this.data.snapshots.sort((a, b) => a.date.localeCompare(b.date));
     }
 
     clearData() {
@@ -939,6 +1055,10 @@ class AssetTracker {
         const hidden = app.classList.toggle('hide-amounts');
         localStorage.setItem('asset-tracker-hide', hidden ? '1' : '0');
         this.updateEyeIcon(hidden);
+        // 重渲染图表，让趋势/饼图坐标轴与 tooltip 同步打码或恢复
+        this._trendHash = null;
+        this.renderDashboard();
+        if (document.getElementById('page-history')?.classList.contains('active')) this.updateHistoryChart();
     }
 
     restoreHideAmounts() {

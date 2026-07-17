@@ -77,7 +77,7 @@ body {
     flex: 1; overflow-y: auto; padding: 32px 40px;
     -webkit-overflow-scrolling: touch;
 }
-.page { display: none; opacity: 0; transition: opacity 0.25s ease; }
+.page { display: none; opacity: 0; transition: opacity 0.25s ease; max-width: 1100px; margin: 0 auto; }
 .page.active { display: block; opacity: 1; }
 
 /* Large Title (iOS style) */
@@ -114,7 +114,10 @@ body {
 .app.hide-amounts .snapshot-subtotal strong,
 .app.hide-amounts .history-row-total,
 .app.hide-amounts .history-row-change,
-.app.hide-amounts .history-detail-row span:last-child {
+.app.hide-amounts .history-detail-row span:last-child,
+.app.hide-amounts .rank-current,
+.app.hide-amounts .category-rank-change,
+.app.hide-amounts .period-stats .stat-value {
     font-size: 0 !important;
     color: transparent !important;
 }
@@ -125,14 +128,22 @@ body {
 .app.hide-amounts .snapshot-subtotal strong::after,
 .app.hide-amounts .history-row-total::after,
 .app.hide-amounts .history-row-change::after,
-.app.hide-amounts .history-detail-row span:last-child::after {
+.app.hide-amounts .history-detail-row span:last-child::after,
+.app.hide-amounts .rank-current::after,
+.app.hide-amounts .category-rank-change::after,
+.app.hide-amounts .period-stats .stat-value::after {
     content: '****';
     font-size: 20px;
     color: var(--text-muted);
     letter-spacing: 2px;
 }
+.app.hide-amounts .rank-current::after,
+.app.hide-amounts .category-rank-change::after,
+.app.hide-amounts .period-stats .stat-value::after {
+    font-size: 14px;
+}
 .app.hide-amounts .summary-card.total .card-value::after {
-    font-size: 24px;
+    font-size: 30px;
     color: rgba(255,255,255,0.5);
 }
 
@@ -151,7 +162,7 @@ body {
 .period-stats .stat-value.negative { color: var(--red); }
 
 /* Trend summary card */
-.trend-summary-card { display: flex; flex-direction: column; justify-content: center; }
+.trend-summary-card { grid-column: span 2; display: flex; flex-direction: column; justify-content: center; }
 .trend-summary-text { font-size: 15px; font-weight: 500; line-height: 1.4; }
 
 /* Category rank */
@@ -244,9 +255,13 @@ body {
 .card-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; }
 .summary-card.total .card-label { color: rgba(255,255,255,0.7); }
 .card-value { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+.summary-card.total .card-value { font-size: 30px; letter-spacing: -1px; }
 .card-change { font-size: 13px; margin-top: 4px; }
 .card-change.positive { color: var(--green); }
 .card-change.negative { color: var(--red); }
+/* 蓝紫卡上的涨跌用柔色，避免纯绿/纯红刺眼 */
+.summary-card.total .card-change.positive { color: #b8f5c8; }
+.summary-card.total .card-change.negative { color: #ffc4bf; }
 
 .dashboard-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .chart-container {
@@ -256,6 +271,28 @@ body {
 .chart-container.full { grid-column: 1 / -1; }
 .chart-container.half { grid-column: auto; }
 .chart-container h3 { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+
+/* 饼图空状态占位 */
+.chart-empty {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 160px; color: var(--text-muted); font-size: 14px;
+}
+
+/* 编辑此快照按钮 */
+.history-edit-btn {
+    margin-top: 8px; padding: 6px 14px;
+    background: transparent; border: 1px solid var(--accent);
+    color: var(--accent); border-radius: 8px; font-size: 13px;
+    cursor: pointer; transition: all 0.15s;
+}
+.history-edit-btn:active { opacity: 0.6; transform: scale(0.97); }
+
+/* 编辑历史快照提示条 */
+.snapshot-edit-banner {
+    margin-bottom: 12px; padding: 10px 14px;
+    background: rgba(10,132,255,0.12); border: 1px solid var(--accent);
+    color: var(--accent); border-radius: 10px; font-size: 13px;
+}
 
 /* Category List */
 .category-list { display: flex; flex-direction: column; gap: 0; }
@@ -517,6 +554,7 @@ body {
     /* Dashboard mobile */
     .summary-card { padding: 12px 14px; }
     .card-value { font-size: 20px; }
+    .summary-card.total .card-value { font-size: 26px; }
 
     /* Snapshot mobile */
     .snapshot-form { max-width: 100%; }
