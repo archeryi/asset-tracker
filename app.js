@@ -308,34 +308,6 @@ class AssetTracker {
             document.getElementById('year-change-pct').textContent = '';
         }
 
-        // 趋势摘要:只在信息增量场景显示(连续单向变动 / 数据不足),波动情况看图即可,不再赘述
-        const summaryEl = document.getElementById('trend-summary');
-        if (snapshots.length >= 3) {
-            const recent3 = snapshots.slice(-3).map(s => this.getSnapshotTotal(s));
-            const allUp = recent3[2] > recent3[1] && recent3[1] > recent3[0];
-            const allDown = recent3[2] < recent3[1] && recent3[1] < recent3[0];
-            if (allUp) {
-                summaryEl.textContent = '📈 连续增长中';
-                summaryEl.style.color = 'var(--green)';
-                summaryEl.style.display = '';
-            } else if (allDown) {
-                summaryEl.textContent = '📉 连续下降';
-                summaryEl.style.color = 'var(--red)';
-                summaryEl.style.display = '';
-            } else {
-                summaryEl.textContent = '';
-                summaryEl.style.display = 'none';
-            }
-        } else if (snapshots.length >= 1) {
-            summaryEl.textContent = '记录更多快照后显示趋势';
-            summaryEl.style.color = 'var(--text-muted)';
-            summaryEl.style.display = '';
-        } else {
-            summaryEl.textContent = '暂无数据';
-            summaryEl.style.color = 'var(--text-muted)';
-            summaryEl.style.display = '';
-        }
-
         this.renderTrendChart(snapshots);
         if (latest) {
             this.renderAllocationChart(latest);

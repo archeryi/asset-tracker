@@ -196,10 +196,6 @@ body {
 .period-stats .stat-value.positive { color: var(--green); }
 .period-stats .stat-value.negative { color: var(--red); }
 
-/* Trend summary card */
-.trend-summary-card { grid-column: span 2; display: flex; flex-direction: column; justify-content: center; }
-.trend-summary-text { font-size: 15px; font-weight: 500; line-height: 1.4; }
-
 /* Category rank */
 .category-rank-row {
     padding: 10px 16px; border-bottom: 1px solid var(--separator); font-size: 14px;
