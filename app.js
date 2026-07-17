@@ -308,22 +308,32 @@ class AssetTracker {
             document.getElementById('year-change-pct').textContent = '';
         }
 
-        // 趋势摘要
+        // 趋势摘要:只在信息增量场景显示(连续单向变动 / 数据不足),波动情况看图即可,不再赘述
         const summaryEl = document.getElementById('trend-summary');
         if (snapshots.length >= 3) {
             const recent3 = snapshots.slice(-3).map(s => this.getSnapshotTotal(s));
             const allUp = recent3[2] > recent3[1] && recent3[1] > recent3[0];
             const allDown = recent3[2] < recent3[1] && recent3[1] < recent3[0];
-            if (allUp) summaryEl.textContent = '📈 连续增长中';
-            else if (allDown) summaryEl.textContent = '📉 连续下降';
-            else summaryEl.textContent = '📊 波动中，整体' + (recent3[2] >= recent3[0] ? '上升' : '下降');
-            summaryEl.style.color = allDown ? 'var(--red)' : allUp ? 'var(--green)' : 'var(--text-secondary)';
+            if (allUp) {
+                summaryEl.textContent = '📈 连续增长中';
+                summaryEl.style.color = 'var(--green)';
+                summaryEl.style.display = '';
+            } else if (allDown) {
+                summaryEl.textContent = '📉 连续下降';
+                summaryEl.style.color = 'var(--red)';
+                summaryEl.style.display = '';
+            } else {
+                summaryEl.textContent = '';
+                summaryEl.style.display = 'none';
+            }
         } else if (snapshots.length >= 1) {
             summaryEl.textContent = '记录更多快照后显示趋势';
             summaryEl.style.color = 'var(--text-muted)';
+            summaryEl.style.display = '';
         } else {
             summaryEl.textContent = '暂无数据';
             summaryEl.style.color = 'var(--text-muted)';
+            summaryEl.style.display = '';
         }
 
         this.renderTrendChart(snapshots);
@@ -375,18 +385,19 @@ class AssetTracker {
         if (!snapshots.length) {
             this.charts.trend = new Chart(ctx, {
                 type: 'line',
-                data: { labels: [''], datasets: [{ data: [0], borderColor: '#0a84ff' }] },
+                data: { labels: [''], datasets: [{ data: [0], borderColor: this._cssVar('--accent') }] },
                 options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } }
             });
             return;
         }
+        const accent = this._cssVar('--accent');
         this.charts.trend = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: snapshots.map(s => s.date),
                 datasets: [{
                     label: '总资产', data: snapshots.map(s => this.getSnapshotTotal(s)),
-                    borderColor: '#0a84ff', backgroundColor: 'rgba(10,132,255,0.1)',
+                    borderColor: accent, backgroundColor: this._hexToRgba(accent, 0.12),
                     fill: true, tension: 0.4,
                     pointRadius: snapshots.length > 15 ? 1 : 3, pointHoverRadius: 5
                 }]
@@ -546,6 +557,16 @@ class AssetTracker {
     // 读取 CSS 变量当前值，供图表配色与主题保持一致
     _cssVar(name) {
         return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+    // 把 #rrggbb / #rgb 转成 rgba(),供图表 fill 用
+    _hexToRgba(hex, alpha) {
+        const h = (hex || '').replace('#', '');
+        if (h.length !== 3 && h.length !== 6) return `rgba(123,160,201,${alpha})`;
+        const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+        const r = parseInt(full.slice(0, 2), 16);
+        const g = parseInt(full.slice(2, 4), 16);
+        const b = parseInt(full.slice(4, 6), 16);
+        return `rgba(${r},${g},${b},${alpha})`;
     }
 
     getThemePref() {
@@ -821,14 +842,15 @@ class AssetTracker {
         if (!snaps.length) {
             this.charts.history = new Chart(ctx, {
                 type: 'line',
-                data: { labels: [''], datasets: [{ data: [0], borderColor: '#0a84ff' }] },
+                data: { labels: [''], datasets: [{ data: [0], borderColor: this._cssVar('--accent') }] },
                 options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } }
             });
             return;
         }
+        const histAccent = this._cssVar('--accent');
         const ds = [{
             label: '总资产', data: snaps.map(s => this.getSnapshotTotal(s)),
-            borderColor: '#0a84ff', backgroundColor: 'rgba(10,132,255,0.08)',
+            borderColor: histAccent, backgroundColor: this._hexToRgba(histAccent, 0.10),
             fill: true, tension: 0.4, borderWidth: 2,
             pointRadius: snaps.length > 15 ? 0 : 2
         }];

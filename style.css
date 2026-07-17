@@ -7,8 +7,9 @@
     --text-primary: #ffffff;
     --text-secondary: #8e8e93;
     --text-muted: #636366;
-    --accent: #0a84ff;
-    --accent-light: #409cff;
+    --accent: #7ba0c9;
+    --accent-light: #96b6d8;
+    --accent-tint: rgba(123,160,201,0.14);
     --green: #6cc088;
     --red: #e07f70;
     --orange: #d9a26a;
@@ -40,6 +41,10 @@
     --handle: rgba(0,0,0,0.2);
     --chart-grid: rgba(0,0,0,0.06);
     --tabbar-bg: #ffffff;
+    /* 浅色下的主色改用中调雾蓝，保证白底可读性 */
+    --accent: #5a7fa8;
+    --accent-light: #7397be;
+    --accent-tint: rgba(90,127,168,0.12);
 }
 
 /* 主题切换平滑过渡 */
@@ -356,7 +361,7 @@ body {
 /* 编辑历史快照提示条 */
 .snapshot-edit-banner {
     margin-bottom: 12px; padding: 10px 14px;
-    background: rgba(10,132,255,0.12); border: 1px solid var(--accent);
+    background: var(--accent-tint); border: 1px solid var(--accent);
     color: var(--accent); border-radius: 10px; font-size: 13px;
 }
 
