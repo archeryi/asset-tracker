@@ -14,6 +14,16 @@
     <script defer src="lib/chart.umd.min.js"></script>
     <script defer src="lib/chartjs-adapter-date-fns.bundle.min.js"></script>
     <link rel="stylesheet" href="style.css">
+    <script>
+        /* 尽早应用主题，避免刷新时深/浅色闪烁 */
+        (function () {
+            try {
+                var m = localStorage.getItem('asset-tracker-theme') || 'auto';
+                var dark = m === 'dark' || (m === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+            } catch (e) {}
+        })();
+    </script>
 </head>
 <body>
     <div class="app">
@@ -74,7 +84,7 @@
                 <div class="dashboard-summary">
                     <div class="summary-card total">
                         <div class="card-label">总资产 <button class="btn-eye" id="btn-eye" onclick="app.toggleHideAmounts()"><svg id="eye-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
-                        <div class="card-value" id="total-assets">¥0</div>
+                        <div class="card-value tappable" id="total-assets" onclick="app.toggleHideAmounts()">¥0</div>
                         <div class="card-change" id="total-change"></div>
                     </div>
                     <div class="summary-card">
@@ -97,13 +107,22 @@
                         <h3>资产趋势</h3>
                         <canvas id="chart-trend"></canvas>
                     </div>
-                    <div class="chart-container half">
-                        <h3>资产配置</h3>
-                        <canvas id="chart-allocation"></canvas>
-                    </div>
-                    <div class="chart-container half">
-                        <h3>账户占比</h3>
-                        <canvas id="chart-account-allocation"></canvas>
+                    <div class="chart-container full allocation-card">
+                        <div class="allocation-head">
+                            <h3>资产分布</h3>
+                            <div class="seg-control">
+                                <button class="seg-btn active" data-view="category" onclick="app.switchAllocationView('category')">按类别</button>
+                                <button class="seg-btn" data-view="account" onclick="app.switchAllocationView('account')">按账户</button>
+                            </div>
+                        </div>
+                        <div class="allocation-view active" id="view-category">
+                            <canvas id="chart-allocation"></canvas>
+                            <div class="chart-legend" id="legend-allocation"></div>
+                        </div>
+                        <div class="allocation-view" id="view-account">
+                            <canvas id="chart-account-allocation"></canvas>
+                            <div class="chart-legend" id="legend-account-allocation"></div>
+                        </div>
                     </div>
                     <div class="chart-container full">
                         <h3>各类别资产</h3>
@@ -165,6 +184,19 @@
                 <div class="page-title-bar">
                     <h1 class="large-title">我的</h1>
                     <button class="btn-primary" onclick="app.showAddAccount()">+ 账户</button>
+                </div>
+
+                <!-- 外观 -->
+                <div class="ios-group-header-outside">外观</div>
+                <div class="ios-group">
+                    <div class="ios-row" style="flex-direction:column;align-items:stretch;gap:10px">
+                        <span class="ios-row-label">主题</span>
+                        <div class="seg-control theme-seg" id="theme-seg">
+                            <button class="seg-btn" data-theme-opt="auto" onclick="app.setTheme('auto')">跟随系统</button>
+                            <button class="seg-btn" data-theme-opt="light" onclick="app.setTheme('light')">浅色</button>
+                            <button class="seg-btn" data-theme-opt="dark" onclick="app.setTheme('dark')">深色</button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- 账户列表 -->

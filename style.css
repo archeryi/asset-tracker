@@ -9,25 +9,55 @@
     --text-muted: #636366;
     --accent: #0a84ff;
     --accent-light: #409cff;
-    --green: #30d158;
-    --red: #ff453a;
-    --orange: #ff9f0a;
+    --green: #6cc088;
+    --red: #e07f70;
+    --orange: #d9a26a;
     --separator: rgba(255,255,255,0.08);
     --radius: 14px;
     --radius-lg: 16px;
     --shadow: 0 8px 32px rgba(0,0,0,0.4);
+    /* 总资产卡渐变：低饱和雾蓝紫，替代原高饱和蓝紫 */
+    --total-grad-a: #6f8fbf;
+    --total-grad-b: #8a86c4;
+    /* 可跟随主题变化的中性叠加色 */
+    --handle: rgba(255,255,255,0.2);
+    --chart-grid: rgba(255,255,255,0.06);
+    --tabbar-bg: #000000;
+}
+
+/* 浅色主题：iOS 浅色分组风格（浅灰底 + 白卡） */
+[data-theme="light"] {
+    --bg-primary: #f2f2f7;
+    --bg-secondary: #ffffff;
+    --bg-card: #ffffff;
+    --bg-grouped: #ffffff;
+    --bg-hover: #e5e5ea;
+    --text-primary: #1c1c1e;
+    --text-secondary: #6c6c70;
+    --text-muted: #9a9aa0;
+    --separator: rgba(0,0,0,0.10);
+    --shadow: 0 8px 32px rgba(0,0,0,0.12);
+    --handle: rgba(0,0,0,0.2);
+    --chart-grid: rgba(0,0,0,0.06);
+    --tabbar-bg: #ffffff;
+}
+
+/* 主题切换平滑过渡 */
+body, .sidebar, .summary-card, .chart-container, .ios-group,
+.ios-row, .swipe-row-content, .sheet, .toast {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html {
     touch-action: manipulation;
-    background: #000000;
+    background: var(--bg-primary);
     height: 100%;
 }
 
 body {
     font-family: -apple-system, 'SF Pro Display', 'SF Pro Text', sans-serif;
-    background: #000000;
+    background: var(--bg-primary);
     color: var(--text-primary);
     line-height: 1.5;
     overflow: hidden;
@@ -249,13 +279,16 @@ body {
     padding: 16px 18px;
 }
 .summary-card.total {
-    background: linear-gradient(135deg, #0a84ff, #5e5ce6);
+    background: linear-gradient(135deg, var(--total-grad-a), var(--total-grad-b));
     grid-column: span 2;
 }
 .card-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; }
 .summary-card.total .card-label { color: rgba(255,255,255,0.7); }
-.card-value { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+.card-value { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; font-variant-numeric: tabular-nums; }
 .summary-card.total .card-value { font-size: 30px; letter-spacing: -1px; }
+/* 点击总资产即可隐藏/显示金额 */
+.card-value.tappable { cursor: pointer; user-select: none; -webkit-user-select: none; display: inline-block; transition: opacity 0.15s; }
+.card-value.tappable:active { opacity: 0.55; }
 .card-change { font-size: 13px; margin-top: 4px; }
 .card-change.positive { color: var(--green); }
 .card-change.negative { color: var(--red); }
@@ -266,11 +299,44 @@ body {
 .dashboard-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .chart-container {
     background: var(--bg-grouped); border-radius: var(--radius); padding: 20px;
+    border: 1px solid var(--separator);
 }
 .chart-container:first-child { grid-column: 1 / -1; }
 .chart-container.full { grid-column: 1 / -1; }
 .chart-container.half { grid-column: auto; }
 .chart-container h3 { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+
+/* 资产分布卡片：合并类别/账户，用分段切换 */
+.allocation-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.allocation-head h3 { margin-bottom: 0; }
+.seg-control {
+    display: inline-flex; gap: 2px; padding: 2px;
+    background: rgba(120,120,128,0.16); border-radius: 9px;
+}
+.seg-btn {
+    border: none; background: transparent; cursor: pointer;
+    color: var(--text-muted); font-size: 12.5px; font-weight: 500;
+    padding: 5px 14px; border-radius: 7px; transition: all 0.2s;
+}
+.seg-btn.active { background: var(--accent); color: #fff; font-weight: 600; }
+/* 外观主题分段控件：三段等分占满一行 */
+.theme-seg { width: 100%; }
+.theme-seg .seg-btn { flex: 1; text-align: center; }
+
+.allocation-view { display: none; }
+.allocation-view.active { display: block; }
+/* 饼图居中限宽，避免占满整行后过大 */
+.allocation-view canvas { max-width: 320px; margin: 0 auto; }
+
+/* 饼图自定义图例：色块 + 名称 + 百分比，一眼看清比例 */
+.chart-legend { margin-top: 14px; display: flex; flex-direction: column; gap: 7px; }
+.legend-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.legend-label {
+    flex: 1; color: var(--text-secondary); white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+}
+.legend-pct { font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 
 /* 饼图空状态占位 */
 .chart-empty {
@@ -424,7 +490,7 @@ body {
 }
 .sheet-overlay.active .sheet { transform: translateY(0); }
 .sheet-handle {
-    width: 36px; height: 5px; background: rgba(255,255,255,0.2);
+    width: 36px; height: 5px; background: var(--handle);
     border-radius: 3px; margin: 8px auto 0;
 }
 .sheet-header {
@@ -519,9 +585,9 @@ body {
     .sidebar {
         width: 100%; flex-direction: column; padding: 0;
         position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
-        border-right: none; border-top: none;
-        box-shadow: 0 -0.5px 0 rgba(255,255,255,0.08);
-        background: #000000;
+        border-right: none; border-top: 1px solid var(--separator);
+        box-shadow: 0 -0.5px 0 var(--separator);
+        background: var(--tabbar-bg);
         padding-bottom: 32px;
     }
     .sidebar-header, .sidebar-footer { display: none; }

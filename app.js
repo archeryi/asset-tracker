@@ -1,6 +1,11 @@
 const STORAGE_KEY = 'asset-tracker-data';
 const DEFAULT_CATEGORIES = ['现金存款', '基金', '股票', '房产', '保险', '加密货币', '其他', '负债'];
-const CATEGORY_COLORS = ['#0a84ff','#30d158','#ff9f0a','#ff453a','#bf5af2','#64d2ff','#ff375f','#32d74b'];
+// 正资产调色板：低饱和柔和色（iOS 莫兰迪/雾面调），色相均匀、无相近撞色，深色背景下不刺眼
+const CATEGORY_COLORS = ['#7ba0c9','#8f8bc7','#a986bf','#cf9a6a','#ccbb6f','#77b389','#6fb0b0','#7fb3ce'];
+// 负债专用色：柔和玫灰红，深色背景下沉稳不刺眼，同时传达负向语义
+const LIABILITY_COLOR = '#c0808f';
+const isLiability = (cat) => typeof cat === 'string' && cat.includes('负债');
+const THEME_KEY = 'asset-tracker-theme';
 
 class AssetTracker {
     constructor() {
@@ -18,6 +23,7 @@ class AssetTracker {
         this.bindSheetGesture();
         this.preventDoubleTapZoom();
         this.restoreHideAmounts();
+        this.restoreTheme();
         this._initialized = true;
         this.renderDashboard();
         this.setSnapshotDate();
@@ -389,8 +395,8 @@ class AssetTracker {
                 responsive: true,
                 plugins: { legend: { display: false }, tooltip: { callbacks: { label: (i) => this.isHidden() ? '****' : '¥' + i.raw.toLocaleString() } } },
                 scales: {
-                    x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#636366', maxTicksLimit: 6 } },
-                    y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#636366', callback: v => this.isHidden() ? '' : '¥' + (v / 10000).toFixed(0) + '万' } }
+                    x: { grid: { color: this._cssVar('--chart-grid') }, ticks: { color: this._cssVar('--text-muted'), maxTicksLimit: 6 } },
+                    y: { grid: { color: this._cssVar('--chart-grid') }, ticks: { color: this._cssVar('--text-muted'), callback: v => this.isHidden() ? '' : '¥' + (v / 10000).toFixed(0) + '万' } }
                 }
             }
         });
@@ -398,7 +404,10 @@ class AssetTracker {
 
     // 类别 → 颜色的稳定映射（按类别在列表中的索引），使两个饼图色彩呼应
     categoryColor(cat) {
-        const idx = this.data.categories.indexOf(cat);
+        if (isLiability(cat)) return LIABILITY_COLOR; // 负债锁定柔和玫灰红
+        // 负债不占调色板索引，正资产按过滤后的顺序取色，颜色分布更连续
+        const list = this.data.categories.filter(c => !isLiability(c));
+        const idx = list.indexOf(cat);
         return CATEGORY_COLORS[(idx < 0 ? 0 : idx) % CATEGORY_COLORS.length];
     }
 
@@ -445,6 +454,24 @@ class AssetTracker {
         };
     }
 
+    // 自定义饼图图例：每项直接标注百分比，移动端无需 hover 即可看清比例
+    _renderLegend(containerId, labels, data, colors) {
+        const el = document.getElementById(containerId);
+        if (!el) return;
+        const total = data.reduce((a, b) => a + b, 0) || 1;
+        // 按占比降序排列，方便一眼看主次
+        const rows = labels.map((l, i) => ({ label: l, color: colors[i], value: data[i] }))
+            .sort((a, b) => b.value - a.value);
+        el.innerHTML = rows.map(r => {
+            const pct = ((r.value / total) * 100).toFixed(1);
+            return `<div class="legend-row">
+                <span class="legend-dot" style="background:${r.color}"></span>
+                <span class="legend-label">${r.label}</span>
+                <span class="legend-pct">${pct}%</span>
+            </div>`;
+        }).join('');
+    }
+
     renderAllocationChart(snapshot) {
         const ctx = document.getElementById('chart-allocation');
         if (this.charts.allocation) this.charts.allocation.destroy();
@@ -455,18 +482,20 @@ class AssetTracker {
         });
         const labels = Object.keys(ct), data = Object.values(ct);
         this._setChartEmpty('chart-allocation', !labels.length);
-        if (!labels.length) return;
+        if (!labels.length) { this._renderLegend('legend-allocation', [], [], []); return; }
+        const colors = labels.map(l => this.categoryColor(l));
         this.charts.allocation = new Chart(ctx, {
             type: 'doughnut',
-            data: { labels, datasets: [{ data, backgroundColor: labels.map(l => this.categoryColor(l)), borderWidth: 0, hoverOffset: 6 }] },
+            data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0, hoverOffset: 6 }] },
             options: {
                 responsive: true, cutout: '68%',
                 plugins: {
-                    legend: { position: 'bottom', labels: { color: '#8e8e93', padding: 10, font: { size: 11 } } },
+                    legend: { display: false }, // 用下方自定义图例（带百分比）代替
                     tooltip: this._doughnutTooltip()
                 }
             }
         });
+        this._renderLegend('legend-allocation', labels, data, colors);
     }
 
     renderAccountAllocationChart(snapshot) {
@@ -477,7 +506,7 @@ class AssetTracker {
             .filter(x => x.value > 0)
             .sort((a, b) => b.value - a.value);
         this._setChartEmpty('chart-account-allocation', !items.length);
-        if (!items.length) return;
+        if (!items.length) { this._renderLegend('legend-account-allocation', [], [], []); return; }
         // 账户颜色继承所属类别，同类别多个账户按亮度区分，与左侧类别图呼应
         const seen = {};
         const colors = items.map(x => {
@@ -492,11 +521,75 @@ class AssetTracker {
             options: {
                 responsive: true, cutout: '68%',
                 plugins: {
-                    legend: { position: 'bottom', labels: { color: '#8e8e93', padding: 10, font: { size: 11 } } },
+                    legend: { display: false }, // 用下方自定义图例（带百分比）代替
                     tooltip: this._doughnutTooltip()
                 }
             }
         });
+        this._renderLegend('legend-account-allocation', labels, data, colors);
+    }
+
+    // 切换资产分布视图：按类别 / 按账户（合并为一个卡片 + 分段切换）
+    switchAllocationView(view) {
+        document.querySelectorAll('.allocation-card .seg-btn')
+            .forEach(b => b.classList.toggle('active', b.dataset.view === view));
+        const cat = document.getElementById('view-category');
+        const acc = document.getElementById('view-account');
+        if (cat) cat.classList.toggle('active', view === 'category');
+        if (acc) acc.classList.toggle('active', view === 'account');
+        // 隐藏容器渲染时尺寸可能为 0，切回可见后让对应图表重新适配
+        const chart = view === 'category' ? this.charts.allocation : this.charts.accountAllocation;
+        if (chart) chart.resize();
+    }
+
+    // ==================== 主题：浅色 / 深色 / 跟随系统 ====================
+    // 读取 CSS 变量当前值，供图表配色与主题保持一致
+    _cssVar(name) {
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+
+    getThemePref() {
+        return localStorage.getItem(THEME_KEY) || 'auto';
+    }
+
+    // 应用主题：mode = auto/light/dark；auto 时跟随系统
+    applyTheme(mode) {
+        const dark = mode === 'dark'
+            || (mode === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+        // 同步状态栏/浏览器主题色
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', dark ? '#000000' : '#f2f2f7');
+        // 图表配色依赖 CSS 变量，主题变了需重渲（清脏检查缓存强制重画）
+        if (this._initialized) {
+            this._trendHash = null;
+            this.renderDashboard();
+            this.renderHistory();
+        }
+    }
+
+    // 用户选择主题
+    setTheme(mode) {
+        localStorage.setItem(THEME_KEY, mode);
+        this.applyTheme(mode);
+        this._syncThemeButtons(mode);
+    }
+
+    _syncThemeButtons(mode) {
+        document.querySelectorAll('#theme-seg .seg-btn')
+            .forEach(b => b.classList.toggle('active', b.dataset.themeOpt === mode));
+    }
+
+    // 启动时恢复主题偏好，并在 auto 模式下监听系统切换
+    restoreTheme() {
+        const mode = this.getThemePref();
+        this.applyTheme(mode);
+        this._syncThemeButtons(mode);
+        if (window.matchMedia) {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+                if (this.getThemePref() === 'auto') this.applyTheme('auto');
+            });
+        }
     }
 
     renderCategoryList(snapshot) {
@@ -763,12 +856,12 @@ class AssetTracker {
             options: {
                 responsive: true, interaction: { mode: 'index', intersect: false },
                 plugins: {
-                    legend: { labels: { color: '#8e8e93', font: { size: 11 } } },
+                    legend: { labels: { color: this._cssVar('--text-secondary'), font: { size: 11 } } },
                     tooltip: { callbacks: { label: i => this.isHidden() ? `${i.dataset.label}: ****` : `${i.dataset.label}: ¥${i.raw.toLocaleString()}` } }
                 },
                 scales: {
-                    x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#636366', maxTicksLimit: 6 } },
-                    y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#636366', callback: v => this.isHidden() ? '' : '¥' + (v / 10000).toFixed(0) + '万' } }
+                    x: { grid: { color: this._cssVar('--chart-grid') }, ticks: { color: this._cssVar('--text-muted'), maxTicksLimit: 6 } },
+                    y: { grid: { color: this._cssVar('--chart-grid') }, ticks: { color: this._cssVar('--text-muted'), callback: v => this.isHidden() ? '' : '¥' + (v / 10000).toFixed(0) + '万' } }
                 }
             }
         });
